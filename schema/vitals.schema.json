@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/biterik/repo-vitals/main/schema/vitals.schema.json",
+  "title": "repo-vitals snapshot (schema_version 1)",
+  "description": "A daily repo-vitals snapshot. VITALS.json is a snapshot plus a 'derived' object. Sections are null when their collection failed or was skipped (see errors[]).",
+  "type": "object",
+  "required": ["schema_version", "date", "collected_at", "repo", "popularity", "traffic", "releases", "activity", "meta", "errors"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+    "collected_at": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$" },
+    "repo": { "type": "string", "pattern": "^[^/\\s]+/[^/\\s]+$" },
+    "popularity": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["stars", "forks", "watchers", "subscribers"],
+          "properties": {
+            "stars": { "type": ["integer", "null"] },
+            "forks": { "type": ["integer", "null"] },
+            "watchers": { "type": ["integer", "null"] },
+            "subscribers": { "type": ["integer", "null"] }
+          }
+        }
+      ]
+    },
+    "traffic": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["views", "clones", "referrers", "paths"],
+          "properties": {
+            "views": { "$ref": "#/$defs/perDayCounts" },
+            "clones": { "$ref": "#/$defs/perDayCounts" },
+            "referrers": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["referrer", "count", "uniques"],
+                "properties": {
+                  "referrer": { "type": "string" },
+                  "count": { "type": "integer" },
+                  "uniques": { "type": "integer" }
+                }
+              }
+            },
+            "paths": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["path", "count", "uniques"],
+                "properties": {
+                  "path": { "type": "string" },
+                  "count": { "type": "integer" },
+                  "uniques": { "type": "integer" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "releases": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["tag", "published_at", "assets"],
+            "properties": {
+              "tag": { "type": ["string", "null"] },
+              "name": { "type": ["string", "null"] },
+              "published_at": { "type": ["string", "null"] },
+              "prerelease": { "type": "boolean" },
+              "assets": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": ["name", "downloads"],
+                  "properties": {
+                    "name": { "type": ["string", "null"] },
+                    "downloads": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "activity": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["commits_30d", "prs_opened_30d", "prs_merged_30d", "issues_opened_30d", "issues_closed_30d", "contributors_total"],
+          "properties": {
+            "commits_30d": { "type": "integer" },
+            "prs_opened_30d": { "type": "integer" },
+            "prs_merged_30d": { "type": "integer" },
+            "issues_opened_30d": { "type": "integer" },
+            "issues_closed_30d": { "type": "integer" },
+            "contributors_total": { "type": "integer" }
+          }
+        }
+      ]
+    },
+    "meta": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "properties": {
+            "size_kb": { "type": ["integer", "null"] },
+            "open_issues": { "type": ["integer", "null"] },
+            "default_branch": { "type": ["string", "null"] },
+            "created_at": { "type": ["string", "null"] },
+            "pushed_at": { "type": ["string", "null"] },
+            "fork": { "type": "boolean" },
+            "archived": { "type": "boolean" }
+          }
+        }
+      ]
+    },
+    "science": {
+      "type": "object",
+      "description": "Reserved for v1.1 (Zenodo DOI citations/downloads etc.)."
+    },
+    "derived": {
+      "type": "object",
+      "description": "Present in VITALS.json only; computed at render time, never stored in history."
+    },
+    "errors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["section", "error"],
+        "properties": {
+          "section": { "type": "string" },
+          "error": { "type": "string" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "perDayCounts": {
+      "type": "object",
+      "propertyNames": { "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["count", "uniques"],
+        "properties": {
+          "count": { "type": "integer" },
+          "uniques": { "type": "integer" }
+        }
+      }
+    }
+  }
+}

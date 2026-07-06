@@ -1,0 +1,15 @@
+{
+  "data": {
+    "repository": {
+      "defaultBranchRef": {
+        "target": {
+          "history": {"totalCount": 14}
+        }
+      }
+    },
+    "prsOpened": {"issueCount": 3},
+    "prsMerged": {"issueCount": 2},
+    "issuesOpened": {"issueCount": 5},
+    "issuesClosed": {"issueCount": 4}
+  }
+}
