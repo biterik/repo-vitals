@@ -125,3 +125,23 @@ def test_render_subcommand_rebuilds_from_data_alone(tmp_path):
 
 def test_render_subcommand_errors_without_snapshots(tmp_path):
     assert main(["render", "--data-dir", str(tmp_path)]) == 2
+
+
+def test_dashboard_is_self_contained(tmp_path):
+    """§3.4: single file, one pinned CDN dependency, data via relative fetch."""
+    snap = rich_snapshot()
+    history = merge_snapshot({}, snap)
+    write_outputs(tmp_path, snap, history)
+    html = (tmp_path / "index.html").read_text()
+
+    # exactly one external resource: the pinned ECharts build
+    assert html.count("<script src=") == 1
+    assert "echarts@5.5.1" in html
+    assert "<link" not in html  # CSS is inline
+    # data comes from relative fetches, so the file carries no repo state
+    assert 'fetch("VITALS.json")' in html
+    assert 'fetch("history.ndjson")' in html
+    # release-impact overlay, dark mode, mobile viewport
+    assert "markLine" in html
+    assert "prefers-color-scheme" in html
+    assert 'name="viewport"' in html

@@ -8,6 +8,7 @@ from the vitals branch data alone at any time.
 from __future__ import annotations
 
 import datetime as dt
+import importlib.resources
 import json
 import urllib.parse
 from pathlib import Path
@@ -134,10 +135,21 @@ def render_report(snapshot: dict, history: dict[str, dict], branch: str = "vital
     )
 
 
+def render_dashboard() -> str:
+    """index.html — a static, self-contained dashboard (§3.4). All data comes
+    from relative fetches of VITALS.json/history.ndjson at view time, so the
+    file itself carries no repo-specific state and is copied verbatim."""
+    return (
+        importlib.resources.files("repo_vitals")
+        .joinpath("templates/index.html")
+        .read_text(encoding="utf-8")
+    )
+
+
 def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict],
                   branch: str = "vitals") -> list[Path]:
     """Write snapshots/<date>.json, history.ndjson, VITALS.json, REPORT.md,
-    and badge/*.json under out_dir."""
+    index.html, and badge/*.json under out_dir."""
     out = Path(out_dir)
     (out / "snapshots").mkdir(parents=True, exist_ok=True)
     (out / "badge").mkdir(parents=True, exist_ok=True)
@@ -162,6 +174,10 @@ def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict],
     report_path.write_text(render_report(snapshot, history, branch=branch),
                            encoding="utf-8")
     paths.append(report_path)
+
+    dashboard_path = out / "index.html"
+    dashboard_path.write_text(render_dashboard(), encoding="utf-8")
+    paths.append(dashboard_path)
 
     for name, payload in build_badges(snapshot, compute_derived(snapshot, history)).items():
         write_json(f"badge/{name}", payload)

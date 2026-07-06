@@ -29,7 +29,7 @@ Homepage = "https://github.com/biterik/repo-vitals"
 packages = ["repo_vitals"]
 
 [tool.setuptools.package-data]
-repo_vitals = ["templates/*.j2"]
+repo_vitals = ["templates/*.j2", "templates/*.html"]
 
 [tool.ruff]
 line-length = 100

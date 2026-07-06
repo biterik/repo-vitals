@@ -13,7 +13,7 @@ the full design. Milestone progress:
 - [x] M1 — collector + traffic-window merge + tests
 - [x] M2 — commit stage + composite action (dogfood)
 - [x] M3 — REPORT.md, badges, derived metrics
-- [ ] M4 — dashboard
+- [x] M4 — dashboard
 - [ ] M5 — fleet rollout script
 - [ ] M6 — hub template
 
