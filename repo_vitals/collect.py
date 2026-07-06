@@ -289,7 +289,7 @@ def collect_star_history(client, repo, max_pages=400):
 def re_enable_workflow(client, repo, workflow_ref=None):
     """§7.1: GitHub disables cron workflows after 60 days without repo activity;
     re-enable ours on every run. Best-effort — needs `actions: write`."""
-    ref = workflow_ref or os.environ.get("GITHUB_WORKFLOW_REF", "")
+    ref = workflow_ref if workflow_ref is not None else os.environ.get("GITHUB_WORKFLOW_REF", "")
     match = re.search(r"/([^/@]+\.ya?ml)@", ref)
     if not match:
         return False
