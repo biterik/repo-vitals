@@ -88,6 +88,10 @@ def test_load_hub_config_defaults_and_required(tmp_path):
     assert cfg["title"] == "repo-vitals hub"
     assert cfg["stale_after_days"] == 3
     assert cfg["branch"] == "vitals"
+    assert cfg["site_url"] == ""
+
+    path.write_text('repos:\n  - biterik/a\nsite_url: "https://biterik.github.io/hub/"\n')
+    assert load_hub_config(path)["site_url"] == "https://biterik.github.io/hub"
 
     path.write_text("title: x\n")
     with pytest.raises(ValueError, match="repos"):
@@ -181,3 +185,63 @@ def test_build_hub_all_missing_still_writes_site(tmp_path):
                         session=FakeSession({}), now=NOW)
     assert summary["totals"]["ok"] == 0
     assert (tmp_path / "REPORT.md").exists()
+
+
+def test_build_hub_mirrors_per_repo_dashboards(tmp_path):
+    """§3.4(b): clicking a tracked repo should open a chart, not markup —
+    the hub mirrors each reporting repo's own dashboard locally so this
+    works even without that repo's own GitHub Pages."""
+    fresh, bare = "biterik/fresh", "biterik/bare"
+    history = json.dumps({"date": "2026-07-05", "views": {"count": 3, "uniques": 1},
+                          "popularity": {"stars": 8}})
+    routes = routes_for(fresh, vitals_payload(fresh, "2026-07-06T03:17:00Z"),
+                        history_lines=history)
+    session = FakeSession(routes)
+
+    summary = build_hub(hub_config([fresh, bare]), tmp_path, session=session, now=NOW)
+
+    fresh_entry = next(e for e in summary["repos"] if e["repo"] == fresh)
+    assert fresh_entry["dashboard_url"] == "repos/biterik-fresh/index.html"
+    assert "_vitals_text" not in fresh_entry and "_history_text" not in fresh_entry
+
+    mirror = tmp_path / "repos" / "biterik-fresh"
+    mirrored_dashboard = (mirror / "index.html").read_text()
+    assert 'fetch("VITALS.json")' in mirrored_dashboard  # the per-repo dashboard template,
+    assert "hub-data.json" not in mirrored_dashboard     # not the hub's own aggregate one
+    assert json.loads((mirror / "VITALS.json").read_text())["repo"] == fresh
+    assert (mirror / "history.ndjson").read_text().strip() == history
+
+    # a repo with no vitals branch gets no dashboard mirror
+    bare_entry = next(e for e in summary["repos"] if e["repo"] == bare)
+    assert bare_entry["dashboard_url"] is None
+    assert not (tmp_path / "repos" / "biterik-bare").exists()
+
+    # the report links to it, and mentions it's a real dashboard, not markup
+    report = (tmp_path / "REPORT.md").read_text()
+    assert "[dashboard](repos/biterik-fresh/index.html)" in report
+
+    # the raw fields never leak into the published hub-data.json
+    data = json.loads((tmp_path / "hub-data.json").read_text())
+    for entry in data["repos"]:
+        assert "_vitals_text" not in entry and "_history_text" not in entry
+
+
+def test_build_hub_dashboard_url_qualified_with_site_url(tmp_path):
+    repo = "biterik/fresh"
+    session = FakeSession(routes_for(repo, vitals_payload(repo, "2026-07-06T03:17:00Z")))
+    config = hub_config([repo])
+    config["site_url"] = "https://biterik.github.io/repo-vitals-hub"
+
+    summary = build_hub(config, tmp_path, session=session, now=NOW)
+    entry = summary["repos"][0]
+    assert entry["dashboard_url"] == (
+        "https://biterik.github.io/repo-vitals-hub/repos/biterik-fresh/index.html")
+
+
+def test_build_hub_writes_dated_report_archive(tmp_path):
+    summary = build_hub(hub_config(["biterik/a"]), tmp_path,
+                        session=FakeSession({}), now=NOW)
+    archive = tmp_path / "reports" / "test-fleet-2026-07-06.md"
+    assert archive.exists()
+    assert archive.read_text() == (tmp_path / "REPORT.md").read_text()
+    assert summary["title"] == "Test fleet"

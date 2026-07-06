@@ -8,9 +8,16 @@ The hub is strictly read-only: it fetches each tracked repo's VITALS.json
 and history.ndjson from the public raw URLs — no permissions, no
 coordination with the repo owners. It builds a static site directory:
 
-  index.html     aggregate dashboard (fetches hub-data.json)
-  hub-data.json  trimmed per-repo data for the dashboard
-  REPORT.md      combined fleet report (the grant-report artifact)
+  index.html       aggregate dashboard (fetches hub-data.json)
+  hub-data.json    trimmed per-repo data for the dashboard
+  REPORT.md        combined fleet report (the grant-report artifact)
+  reports/         dated, repo/title-qualified copies of REPORT.md
+  repos/<slug>/    a *mirrored copy* of each reporting repo's own interactive
+                   dashboard (index.html + its VITALS.json/history.ndjson) —
+                   ARCHITECTURE.md §3.4(b): "the hub renders every member
+                   repo's dashboard — primary path, always works", because a
+                   repo's own GitHub Pages slot is often already used by docs
+                   and can't be relied on.
 
 The watchdog lives here too: any repo whose VITALS.json is missing or older
 than `stale_after_days` (default 3) is flagged loudly in every output —
@@ -26,7 +33,7 @@ from pathlib import Path
 
 import requests
 
-from repo_vitals.render import render_dashboard_asset, render_template
+from repo_vitals.render import render_dashboard_asset, render_template, slugify
 
 DEFAULT_STALE_DAYS = 3
 SERIES_DAYS = 120  # per-repo history trimmed to this many trailing days
@@ -71,6 +78,13 @@ def load_hub_config(path: str | Path) -> dict:
         "title": data.get("title", "repo-vitals hub"),
         "branch": data.get("branch", "vitals"),
         "stale_after_days": int(data.get("stale_after_days", DEFAULT_STALE_DAYS)),
+        # Optional: this hub site's own public URL (e.g. its GitHub Pages
+        # address), used to build fully-qualified per-repo dashboard links in
+        # REPORT.md so they still work when that file is read raw or emailed
+        # standalone. Without it, dashboard links are root-relative — correct
+        # whenever the site is browsed as a whole (Pages, hub-data.json),
+        # which is the common case.
+        "site_url": str(data.get("site_url", "")).rstrip("/"),
         "repos": repos,
     }
 
@@ -89,7 +103,13 @@ def fetch_repo_status(session, repo, branch="vitals", stale_after_days=DEFAULT_S
         "stars": None, "views_30d": None, "clones_30d": None,
         "downloads_total": None, "health_score": None,
         "report_url": f"{base}/REPORT.md",
+        "dashboard_url": None,  # filled in once build_hub() mirrors this repo's dashboard
         "series": None,
+        # Raw payloads, stashed only long enough for build_hub() to mirror
+        # them into repos/<slug>/ — stripped before entries are ever
+        # serialized (hub-data.json, REPORT.md).
+        "_vitals_text": None,
+        "_history_text": None,
     }
     try:
         resp = session.get(f"{base}/VITALS.json", timeout=30)
@@ -132,16 +152,20 @@ def fetch_repo_status(session, repo, branch="vitals", stale_after_days=DEFAULT_S
     else:
         entry["status"] = "ok"
 
-    entry["series"] = _fetch_series(session, base, now)
+    entry["_vitals_text"] = resp.text
+    entry["series"], entry["_history_text"] = _fetch_series(session, base, now)
     return entry
 
 
 def _fetch_series(session, base, now):
-    """Trimmed per-day series for the dashboard; None on any failure (non-fatal)."""
+    """Trimmed per-day series for the hub's own charts, plus the raw
+    history.ndjson text (for mirroring the repo's own dashboard). Both are
+    None on any failure — non-fatal, the fleet report/dashboard just show
+    less."""
     try:
         resp = session.get(f"{base}/history.ndjson", timeout=30)
         if resp.status_code != 200:
-            return None
+            return None, None
         cutoff = (now.date() - dt.timedelta(days=SERIES_DAYS)).isoformat()
         views, stars = [], []
         for line in resp.text.splitlines():
@@ -159,21 +183,46 @@ def _fetch_series(session, base, now):
                 stars.append([day, pop["stars"]])
             elif rec.get("stars_cumulative") is not None:
                 stars.append([day, rec["stars_cumulative"]])
-        return {"views": views, "stars": stars}
+        return {"views": views, "stars": stars}, resp.text
     except (requests.RequestException, ValueError):
-        return None
+        return None, None
 
 
 def build_hub(config: dict, out_dir: str | Path, session=None, now=None) -> dict:
     """Fetch all tracked repos, write the hub site. Returns the summary dict."""
     session = session or requests.Session()
     now = now or dt.datetime.now(dt.UTC)
+    site_url = config.get("site_url", "")
 
     entries = [
         fetch_repo_status(session, repo, branch=config["branch"],
                           stale_after_days=config["stale_after_days"], now=now)
         for repo in config["repos"]
     ]
+
+    out = Path(out_dir)
+    out.mkdir(parents=True, exist_ok=True)
+
+    # Mirror each reporting repo's own dashboard under repos/<slug>/ — see
+    # the module docstring and ARCHITECTURE.md §3.4(b). This is the primary
+    # way to *view a visualization* for a tracked repo: it doesn't depend on
+    # that repo having GitHub Pages free for its own vitals branch.
+    dashboard_asset = None
+    for e in entries:
+        vitals_text = e.pop("_vitals_text", None)
+        history_text = e.pop("_history_text", None)
+        if e["status"] in ("ok", "stale") and vitals_text and history_text is not None:
+            slug = slugify(e["repo"])
+            repo_dir = out / "repos" / slug
+            repo_dir.mkdir(parents=True, exist_ok=True)
+            (repo_dir / "VITALS.json").write_text(vitals_text, encoding="utf-8")
+            (repo_dir / "history.ndjson").write_text(history_text, encoding="utf-8")
+            if dashboard_asset is None:
+                dashboard_asset = render_dashboard_asset("index.html")
+            (repo_dir / "index.html").write_text(dashboard_asset, encoding="utf-8")
+            relative_url = f"repos/{slug}/index.html"
+            e["dashboard_url"] = f"{site_url}/{relative_url}" if site_url else relative_url
+
     flagged = [e for e in entries if e["status"] != "ok"]
 
     def total(key):
@@ -196,11 +245,18 @@ def build_hub(config: dict, out_dir: str | Path, session=None, now=None) -> dict
         },
     }
 
-    out = Path(out_dir)
-    out.mkdir(parents=True, exist_ok=True)
     (out / "hub-data.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    (out / "REPORT.md").write_text(
-        render_template("hub-report.md.j2", **summary), encoding="utf-8")
+
+    report_text = render_template("hub-report.md.j2", **summary)
+    (out / "REPORT.md").write_text(report_text, encoding="utf-8")
+
+    # Dated, title-qualified archive copy — see render.write_outputs() for
+    # the same convention on a single repo's REPORT.md.
+    reports_dir = out / "reports"
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    archive_name = f"{slugify(config['title'])}-{now:%Y-%m-%d}.md"
+    (reports_dir / archive_name).write_text(report_text, encoding="utf-8")
+
     (out / "index.html").write_text(render_dashboard_asset("hub.html"), encoding="utf-8")
     return summary

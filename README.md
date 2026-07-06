@@ -54,6 +54,13 @@ updated every day with:
 | `history.ndjson` | Complete per-day history since instrumentation | `…/vitals/history.ndjson` |
 | `badge/*.json` | Live shields.io badge endpoints (stars, views/week, health) | `…/vitals/badge/stars.json` |
 | `snapshots/` | Immutable daily raw snapshots (audit trail) | `…/vitals/snapshots/2026-07-06.json` |
+| `reports/` | Dated, repo-qualified copy of that day's `REPORT.md` — safe to download standalone | `…/vitals/reports/<owner>-<repo>-2026-07-06.md` |
+
+`REPORT.md` is a **stable URL that always holds today's report** (for
+badges/scripting); `reports/<owner>-<repo>-<date>.md` is the same content
+under a name that survives being pulled out of context — download several
+repos' reports into one folder (e.g. for a grant renewal) and none of them
+collide or get confused for another day's.
 
 Your default branch is never touched — daily commits go only to `vitals`.
 
@@ -183,8 +190,13 @@ A daily cron fetches each repo's published `VITALS.json` (public raw URLs —
 builds:
 
 - an **aggregate dashboard** on GitHub Pages: the whole portfolio at a glance,
+- a **live dashboard mirrored per repo**, at `repos/<owner>-<repo>/` on the
+  hub's own site — clicking a repo from the fleet table or the report opens
+  an interactive chart, not a raw markdown file, even if that repo never set
+  up its own GitHub Pages,
 - a **combined REPORT.md** — the document you attach to a funder report
-  (`https://<you>.github.io/<hub>/REPORT.md`),
+  (`https://<you>.github.io/<hub>/REPORT.md`), plus a dated copy under
+  `reports/` for filing away without collisions,
 - a **watchdog** that flags repos whose data has gone stale (expired token,
   disabled cron) or that aren't instrumented yet, so silent failures get
   noticed.

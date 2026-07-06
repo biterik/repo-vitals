@@ -32,12 +32,20 @@ Repositories are flagged when their data is older than {{ stale_after_days }} da
 ## Per-repository reports
 
 {% for e in repos %}
-- **[{{ e.repo }}](https://github.com/{{ e.repo }})** — {% if e.status in ("ok", "stale") %}[daily report]({{ e.report_url }}) · [data branch](https://github.com/{{ e.repo }}/tree/vitals){% else %}not instrumented — add repo-vitals ([2-minute setup](https://github.com/biterik/repo-vitals#install-instrument-a-repository-2-minutes)){% endif %}
+- **[{{ e.repo }}](https://github.com/{{ e.repo }})** — {% if e.status in ("ok", "stale") %}{% if e.dashboard_url %}[dashboard]({{ e.dashboard_url }}) · {% endif %}[daily report]({{ e.report_url }}) · [data branch](https://github.com/{{ e.repo }}/tree/vitals){% else %}not instrumented — add repo-vitals ([2-minute setup](https://github.com/biterik/repo-vitals#install-instrument-a-repository-2-minutes)){% endif %}
 
 {% endfor %}
 
+The **dashboard** links above are charts, not markup — this hub mirrors each
+reporting repo's own interactive dashboard so it's viewable even if that
+repo has no GitHub Pages of its own. **Daily report** is the plain
+`REPORT.md`; open it via this hub's own site to have it render nicely,
+since raw GitHub URLs show it as plain text.
+
 ---
 
-<sub>Generated daily by the [repo-vitals hub](https://github.com/biterik/repo-vitals).
+<sub>[repo-vitals](https://github.com/biterik/repo-vitals) by Erik Bitzek —
+turns any GitHub repo into a permanent analytics archive; this hub
+aggregates a whole fleet into one dashboard and one grant-ready report.
 Data is read from each repository's public `vitals` branch; this hub has no
 write access to anything.</sub>

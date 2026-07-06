@@ -6,6 +6,11 @@
 title: "My repo fleet"
 # stale_after_days: 3    # watchdog threshold (default 3)
 # branch: vitals         # data branch name (default vitals)
+# site_url: "https://your-name.github.io/repo-vitals-hub"   # this hub's own
+#   public URL. Optional — only needed to make the per-repo dashboard links
+#   inside REPORT.md fully-qualified (so they still work if that file is
+#   read raw or emailed standalone). Without it the links are root-relative,
+#   which is correct whenever the site is browsed as a whole on Pages.
 
 repos:
   - owner/repo-one

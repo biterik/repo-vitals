@@ -26,6 +26,18 @@ Your fleet is then live at:
 - `https://<your-name>.github.io/<hub-repo>/REPORT.md` — combined report
   (the document to attach to a funder or project report)
 - `https://<your-name>.github.io/<hub-repo>/hub-data.json` — machine-readable
+- `https://<your-name>.github.io/<hub-repo>/repos/<owner>-<repo>/` — a live
+  **interactive dashboard for each tracked repo**, mirrored by the hub
+  itself. Clicking a repo from the fleet table or the combined report opens
+  charts, not a raw markdown file — this works even for repos that never
+  set up their own GitHub Pages. Set `site_url` in `hub-config.yml` to your
+  hub's own address above so these links are fully-qualified inside
+  `REPORT.md` too (optional; relative links already work when the site is
+  browsed as a whole).
+- `https://<your-name>.github.io/<hub-repo>/reports/` — every day's combined
+  report, kept under a name that always carries the fleet title and the
+  date (e.g. `my-repo-fleet-2026-07-06.md`) — safe to download and file
+  away without colliding with anyone else's `REPORT.md`.
 
 The site rebuilds daily (04:43 UTC), on every change to `hub-config.yml`,
 and on demand via *Run workflow*.

@@ -11,7 +11,7 @@ from conftest import make_snapshot, window
 from repo_vitals.cli import main
 from repo_vitals.derived import compute_derived
 from repo_vitals.merge import merge_snapshot
-from repo_vitals.render import build_badges, render_report, sparkline, write_outputs
+from repo_vitals.render import build_badges, render_report, slugify, sparkline, write_outputs
 
 
 def rich_snapshot(date="2026-07-06"):
@@ -109,6 +109,25 @@ def test_write_outputs_includes_badges(tmp_path):
     for name in ("stars.json", "views-week.json", "health.json"):
         payload = json.loads((tmp_path / "badge" / name).read_text())
         assert payload["schemaVersion"] == 1
+
+
+def test_slugify_makes_filename_safe_identifiers():
+    assert slugify("biterik/repo-vitals") == "biterik-repo-vitals"
+    assert slugify("My Repo Fleet!!") == "my-repo-fleet"
+    assert slugify("") == "report"
+
+
+def test_write_outputs_archives_a_dated_repo_qualified_report(tmp_path):
+    """Alongside the stable REPORT.md, a copy named with the repo and the
+    date should always exist — safe to download standalone without
+    colliding with another repo's or another day's report."""
+    snap = rich_snapshot(date="2026-07-06")
+    history = merge_snapshot({}, snap)
+    paths = write_outputs(tmp_path, snap, history)
+
+    archive_path = tmp_path / "reports" / "biterik-example-2026-07-06.md"
+    assert archive_path in paths
+    assert archive_path.read_text() == (tmp_path / "REPORT.md").read_text()
 
 
 def test_render_subcommand_rebuilds_from_data_alone(tmp_path):

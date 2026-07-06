@@ -14,6 +14,7 @@ from __future__ import annotations
 import datetime as dt
 import importlib.resources
 import json
+import re
 import urllib.parse
 from pathlib import Path
 
@@ -32,6 +33,15 @@ _env.filters["dash"] = lambda v: "–" if v is None else v
 
 SPARK_BLOCKS = "▁▂▃▄▅▆▇█"
 SPARK_DAYS = 30
+
+
+def slugify(text: str) -> str:
+    """Lowercase, dash-joined identifier safe for filenames — used to give
+    archived reports names that survive being downloaded or emailed on their
+    own, away from the repo/branch that produced them (e.g. a fleet report
+    attached to a grant renewal alongside a dozen others)."""
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return slug or "report"
 
 
 def build_vitals(snapshot: dict, history: dict[str, dict]) -> dict:
@@ -164,10 +174,11 @@ def render_dashboard() -> str:
 def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict],
                   branch: str = "vitals") -> list[Path]:
     """Write snapshots/<date>.json, history.ndjson, VITALS.json, REPORT.md,
-    index.html, and badge/*.json under out_dir."""
+    reports/<repo>-<date>.md, index.html, and badge/*.json under out_dir."""
     out = Path(out_dir)
     (out / "snapshots").mkdir(parents=True, exist_ok=True)
     (out / "badge").mkdir(parents=True, exist_ok=True)
+    (out / "reports").mkdir(parents=True, exist_ok=True)
 
     paths = []
 
@@ -185,10 +196,19 @@ def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict],
 
     write_json("VITALS.json", build_vitals(snapshot, history))
 
+    report_text = render_report(snapshot, history, branch=branch)
+
     report_path = out / "REPORT.md"
-    report_path.write_text(render_report(snapshot, history, branch=branch),
-                           encoding="utf-8")
+    report_path.write_text(report_text, encoding="utf-8")
     paths.append(report_path)
+
+    # A second, self-identifying copy: REPORT.md is a stable URL that always
+    # holds *today's* report, so a name that always carries the repo and the
+    # date it was generated (§ archival — survives being downloaded/emailed
+    # standalone, e.g. several repos' reports collected for a grant renewal).
+    archive_path = out / "reports" / f"{slugify(snapshot['repo'])}-{snapshot['date']}.md"
+    archive_path.write_text(report_text, encoding="utf-8")
+    paths.append(archive_path)
 
     dashboard_path = out / "index.html"
     dashboard_path.write_text(render_dashboard(), encoding="utf-8")
