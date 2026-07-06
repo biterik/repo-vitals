@@ -14,7 +14,7 @@ the full design. Milestone progress:
 - [x] M2 — commit stage + composite action (dogfood)
 - [x] M3 — REPORT.md, badges, derived metrics
 - [x] M4 — dashboard
-- [ ] M5 — fleet rollout script
+- [x] M5 — fleet rollout script
 - [ ] M6 — hub template
 
 ## Quickstart (target UX)
@@ -45,6 +45,23 @@ Daily data appears on the `vitals` branch at stable raw URLs:
 https://raw.githubusercontent.com/<owner>/<repo>/vitals/VITALS.json
 https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md
 ```
+
+## Fleet rollout
+
+`deploy/rollout.sh` instruments many repos at once via PRs (never direct
+pushes): it sets the `REPO_VITALS_TOKEN` secret, adds the workflow file on an
+`add-repo-vitals` branch, and opens a PR. Already-instrumented repos are
+skipped, so re-running is safe.
+
+```sh
+deploy/rollout.sh --dry-run                 # plan for all your repos
+deploy/rollout.sh --repos a,b --merge       # selected repos, auto-merge
+deploy/rollout.sh --exclude big-mono-repo   # everything except
+```
+
+The traffic PAT is taken from `--token`, `$REPO_VITALS_TOKEN`, or a
+`repo-vitals-token` shell function (e.g. a macOS keychain lookup); with
+`--no-secret` the rollout works without one and traffic is skipped gracefully.
 
 ## Badges
 
