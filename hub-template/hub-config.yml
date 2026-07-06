@@ -1,0 +1,13 @@
+# repo-vitals hub configuration.
+# List every repository to track — any repo with a vitals branch works,
+# including repos you don't own (the hub reads public raw URLs, read-only).
+# Simple YAML only: scalar keys and one flat list.
+
+title: "My repo fleet"
+# stale_after_days: 3    # watchdog threshold (default 3)
+# branch: vitals         # data branch name (default vitals)
+
+repos:
+  - owner/repo-one
+  - owner/repo-two
+  # - other-org/their-repo

@@ -139,15 +139,26 @@ def render_report(snapshot: dict, history: dict[str, dict], branch: str = "vital
     )
 
 
+def render_template(name: str, **context) -> str:
+    """Render a packaged Jinja2 template (shared by report and hub outputs)."""
+    return _env.get_template(name).render(**context)
+
+
+def render_dashboard_asset(name: str) -> str:
+    """Verbatim copy of a static packaged asset (dashboards carry no repo
+    state — they fetch their data at view time)."""
+    return (
+        importlib.resources.files("repo_vitals")
+        .joinpath(f"templates/{name}")
+        .read_text(encoding="utf-8")
+    )
+
+
 def render_dashboard() -> str:
     """index.html — a static, self-contained dashboard (§3.4). All data comes
     from relative fetches of VITALS.json/history.ndjson at view time, so the
     file itself carries no repo-specific state and is copied verbatim."""
-    return (
-        importlib.resources.files("repo_vitals")
-        .joinpath("templates/index.html")
-        .read_text(encoding="utf-8")
-    )
+    return render_dashboard_asset("index.html")
 
 
 def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict],

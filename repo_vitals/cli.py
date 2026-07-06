@@ -88,10 +88,44 @@ def main(argv=None) -> int:
         help="data branch name, used for badge URLs (default: 'vitals')",
     )
 
+    hub = sub.add_parser(
+        "hub",
+        help="build the aggregate fleet site (dashboard + combined REPORT.md + watchdog)",
+    )
+    hub.add_argument(
+        "--config",
+        default="hub-config.yml",
+        help="hub config file listing the repos to track (default: hub-config.yml)",
+    )
+    hub.add_argument(
+        "--output-dir",
+        default="_site",
+        help="directory for the generated site (default: ./_site)",
+    )
+
     args = parser.parse_args(argv)
     if args.command == "render":
         return _render(args)
+    if args.command == "hub":
+        return _hub(args)
     return _run(args)
+
+
+def _hub(args) -> int:
+    from repo_vitals.hub import build_hub, load_hub_config
+
+    config = load_hub_config(args.config)
+    summary = build_hub(config, args.output_dir)
+    for entry in summary["repos"]:
+        marker = "ok  " if entry["status"] == "ok" else "WARN"
+        detail = f" — {entry['detail']}" if entry["detail"] else ""
+        print(f"{marker} {entry['repo']}: {entry['status']}{detail}", file=sys.stderr)
+    print(f"hub site written to {args.output_dir} "
+          f"({summary['totals']['ok']}/{summary['totals']['repos']} repos reporting)")
+    if summary["totals"]["ok"] == 0:
+        print("error: no tracked repo delivered any data", file=sys.stderr)
+        return 1
+    return 0
 
 
 def _render(args) -> int:

@@ -1,0 +1,47 @@
+# Author: Erik Bitzek <e.bitzek@mpi-susmat.de>
+# Department of Materials Science, WW8-Materials Simulation,
+# Friedrich-Alexander-Universität Erlangen-Nürnberg,
+# Dr.-Mack-Straße 77, 90762 Fürth, Germany
+#
+# Builds the aggregate fleet site daily and deploys it to GitHub Pages.
+# One-time setup after creating the hub repo:
+#   Settings -> Pages -> Source: "GitHub Actions"
+name: hub
+
+on:
+  schedule:
+    - cron: "43 4 * * *"   # daily, after the tracked repos' 03:17 runs
+  workflow_dispatch:
+  push:
+    paths: [hub-config.yml]   # rebuild immediately when the repo list changes
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install repo-vitals
+        run: pip install --quiet "git+https://github.com/biterik/repo-vitals@v1"
+      - name: Build hub site (dashboard + combined REPORT.md + watchdog)
+        run: python -m repo_vitals hub --config hub-config.yml --output-dir _site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,43 @@
+{#-
+  Author: Erik Bitzek <e.bitzek@mpi-susmat.de>
+  Department of Materials Science, WW8-Materials Simulation,
+  Friedrich-Alexander-Universität Erlangen-Nürnberg,
+  Dr.-Mack-Straße 77, 90762 Fürth, Germany
+-#}
+# {{ title }} — fleet report
+
+_Generated {{ generated_at }} (UTC) · {{ totals.repos }} repositories tracked · {{ totals.ok }} reporting normally_
+
+{% if flagged %}
+> ## ⚠️ Watchdog: {{ flagged | length }} repositor{{ "y" if flagged | length == 1 else "ies" }} need{{ "s" if flagged | length == 1 else "" }} attention
+>
+{% for e in repos if e.status != "ok" %}
+> - **{{ e.repo }}** — `{{ e.status }}`: {{ e.detail }}
+{% endfor %}
+{% endif %}
+
+## Fleet overview
+
+| Repository | Status | Stars | Views (30 d) | Clones (30 d) | Downloads | Health | Last update |
+|---|---|---:|---:|---:|---:|---:|---|
+{% for e in repos %}
+| [{{ e.repo }}](https://github.com/{{ e.repo }}) | {{ {"ok": "✅ ok", "stale": "⚠️ stale", "missing": "❌ missing", "error": "❌ error"}[e.status] }} | {{ e.stars | dash }} | {{ e.views_30d | dash }} | {{ e.clones_30d | dash }} | {{ e.downloads_total | dash }} | {{ e.health_score | dash }} | {{ (e.collected_at or "–")[:10] }} |
+{% endfor %}
+| **Total** | | **{{ totals.stars | dash }}** | **{{ totals.views_30d | dash }}** | **{{ totals.clones_30d | dash }}** | **{{ totals.downloads_total | dash }}** | | |
+
+Health is a 0–100 heuristic computed per repo — see
+[repo-vitals](https://github.com/biterik/repo-vitals) for the formula.
+Repositories are flagged when their data is older than {{ stale_after_days }} days.
+
+## Per-repository reports
+
+{% for e in repos %}
+- **[{{ e.repo }}](https://github.com/{{ e.repo }})** — {% if e.status in ("ok", "stale") %}[daily report]({{ e.report_url }}) · [data branch](https://github.com/{{ e.repo }}/tree/vitals){% else %}not instrumented — add repo-vitals ([2-minute setup](https://github.com/biterik/repo-vitals#install-instrument-a-repository-2-minutes)){% endif %}
+
+{% endfor %}
+
+---
+
+<sub>Generated daily by the [repo-vitals hub](https://github.com/biterik/repo-vitals).
+Data is read from each repository's public `vitals` branch; this hub has no
+write access to anything.</sub>
