@@ -161,10 +161,14 @@ downloads, activity). To view it:
 metrics; schema in [`schema/vitals.schema.json`](schema/vitals.schema.json))
 or `history.ndjson` (one JSON object per day).
 
-## Watch a whole fleet: the hub *(upcoming — milestone M6)*
+## Watch a whole fleet: the hub
 
-For consortia and project managers, a companion **hub** repository (created
-once from a template) tracks any number of instrumented repos:
+For consortia and project managers, a companion **hub** repository — three
+files, [set up in 5 minutes](hub-template/README.md) from
+[`hub-template/`](hub-template/) or the
+[repo-vitals-hub template repo](https://github.com/biterik/repo-vitals-hub) —
+tracks any number of instrumented repos. **Live example:
+<https://biterik.github.io/repo-vitals-hub/>.**
 
 ```yaml
 # hub config: just a list — including repos you don't own
@@ -179,9 +183,11 @@ A daily cron fetches each repo's published `VITALS.json` (public raw URLs —
 builds:
 
 - an **aggregate dashboard** on GitHub Pages: the whole portfolio at a glance,
-- a **combined REPORT.md** — the document you attach to a funder report,
+- a **combined REPORT.md** — the document you attach to a funder report
+  (`https://<you>.github.io/<hub>/REPORT.md`),
 - a **watchdog** that flags repos whose data has gone stale (expired token,
-  disabled cron), so silent failures get noticed.
+  disabled cron) or that aren't instrumented yet, so silent failures get
+  noticed.
 
 That means anyone with a list of NFDI-MatWerk repositories can stand up
 their own fleet report, self-service. The only prerequisite: each tracked
@@ -236,9 +242,8 @@ format, or decades later.
   conflicts; the action re-enables its own workflow if GitHub's 60-day
   auto-disable hits; forks are a no-op by default.
 - Full design: [ARCHITECTURE.md](ARCHITECTURE.md). Milestone status:
-  M1–M5 done (collector/merge, action, reports/badges, dashboard, rollout);
-  M6 (the multi-repo hub) and M7 (Zenodo DOI citations/downloads for
-  research software) upcoming.
+  M1–M6 done (collector/merge, action, reports/badges, dashboard, rollout,
+  hub); M7 (Zenodo DOI citations/downloads for research software) upcoming.
 
 ## Local development
 
