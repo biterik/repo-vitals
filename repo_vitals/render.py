@@ -1,3 +1,7 @@
+# Author: Erik Bitzek <e.bitzek@mpi-susmat.de>
+# Department of Materials Science, WW8-Materials Simulation,
+# Friedrich-Alexander-Universität Erlangen-Nürnberg,
+# Dr.-Mack-Straße 77, 90762 Fürth, Germany
 """Render stage: turn snapshot + history into the published artifacts.
 
 Rendering is a pure function of history + templates (§7.9): the `render`

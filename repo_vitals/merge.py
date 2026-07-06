@@ -1,3 +1,7 @@
+# Author: Erik Bitzek <e.bitzek@mpi-susmat.de>
+# Department of Materials Science, WW8-Materials Simulation,
+# Friedrich-Alexander-Universität Erlangen-Nürnberg,
+# Dr.-Mack-Straße 77, 90762 Fürth, Germany
 """Merge stage: fold a daily snapshot into the long-term per-day history.
 
 The traffic API returns a rolling 14-day window; consecutive runs overlap

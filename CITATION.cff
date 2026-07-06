@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata below."
+title: "repo-vitals"
+type: software
+authors:
+  - family-names: Bitzek
+    given-names: Erik
+    email: e.bitzek@mpi-susmat.de
+    orcid: "https://orcid.org/0000-0001-7430-3694"
+    affiliation: >-
+      Department of Materials Science, WW8-Materials Simulation,
+      Friedrich-Alexander-Universität Erlangen-Nürnberg,
+      Dr.-Mack-Straße 77, 90762 Fürth, Germany
+abstract: >-
+  Long-term GitHub repository statistics: a daily GitHub Action that
+  archives traffic, stars, releases, and activity to an orphan vitals
+  branch — with stable-URL daily reports (REPORT.md / VITALS.json),
+  shields.io badges, and a self-contained interactive dashboard.
+  GitHub deletes traffic data after 14 days; repo-vitals keeps it
+  forever, in your own repository, with zero infrastructure.
+  Funded by the Deutsche Forschungsgemeinschaft (DFG, German Research
+  Foundation) under the National Research Data Infrastructure –
+  NFDI 38/1 – project number 460247524 (NFDI-MatWerk consortium).
+license: BSD-3-Clause
+repository-code: "https://github.com/biterik/repo-vitals"
+url: "https://github.com/biterik/repo-vitals"
+version: 1.0.0
+date-released: "2026-07-06"
+keywords:
+  - github
+  - repository-metrics
+  - research-software-engineering
+  - software-sustainability
+  - nfdi-matwerk

@@ -1,3 +1,7 @@
+# Author: Erik Bitzek <e.bitzek@mpi-susmat.de>
+# Department of Materials Science, WW8-Materials Simulation,
+# Friedrich-Alexander-Universität Erlangen-Nürnberg,
+# Dr.-Mack-Straße 77, 90762 Fürth, Germany
 """Commit stage: publish the run's outputs to the orphan vitals branch.
 
 Concurrency strategy (ARCHITECTURE.md §7.2): each publish attempt starts

@@ -1,3 +1,7 @@
+# Author: Erik Bitzek <e.bitzek@mpi-susmat.de>
+# Department of Materials Science, WW8-Materials Simulation,
+# Friedrich-Alexander-Universität Erlangen-Nürnberg,
+# Dr.-Mack-Straße 77, 90762 Fürth, Germany
 """Derived metrics — computed at render time, never stored in history (§4).
 
 Everything here is a pure function of the merged per-day history plus the

@@ -1,3 +1,7 @@
+# Author: Erik Bitzek <e.bitzek@mpi-susmat.de>
+# Department of Materials Science, WW8-Materials Simulation,
+# Friedrich-Alexander-Universität Erlangen-Nürnberg,
+# Dr.-Mack-Straße 77, 90762 Fürth, Germany
 # Standard Actions release flow (§8): pushing a SemVer tag moves the floating
 # major tag (v1) so consumer repos pinned to biterik/repo-vitals@v1 pick up
 # fixes without PRs.
