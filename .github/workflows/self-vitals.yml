@@ -1,0 +1,23 @@
+# Dogfood: repo-vitals runs on itself, using the local action (uses: ./).
+name: self-vitals
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write   # push to the vitals branch
+  actions: write    # re-enable this workflow if GitHub auto-disabled it (§7.1)
+
+concurrency:
+  group: repo-vitals
+
+jobs:
+  vitals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        with:
+          traffic-token: ${{ secrets.REPO_VITALS_TOKEN }}

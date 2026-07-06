@@ -1,0 +1,46 @@
+name: "repo-vitals"
+description: >-
+  Daily long-term repository statistics — traffic, stars, releases, activity —
+  archived to an orphan vitals branch with stable-URL VITALS.json and REPORT.md.
+author: "Erik Bitzek"
+branding:
+  icon: activity
+  color: purple
+
+inputs:
+  traffic-token:
+    description: >-
+      PAT for the traffic endpoints (fine-grained: Administration read; classic:
+      repo scope). GITHUB_TOKEN is rejected there. Omit to skip traffic gracefully.
+    required: false
+    default: ""
+  token:
+    description: Token for all other API calls and for pushing the vitals branch.
+    required: false
+    default: ${{ github.token }}
+  branch:
+    description: Name of the data branch.
+    required: false
+    default: "vitals"
+  allow-fork:
+    description: Run even if this repository is a fork (default is a silent no-op).
+    required: false
+    default: "false"
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install repo-vitals
+      shell: bash
+      run: pip install --quiet "${{ github.action_path }}"
+    - name: Collect, merge, render, commit
+      shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        REPO_VITALS_TOKEN: ${{ inputs.traffic-token }}
+        REPO_VITALS_BRANCH: ${{ inputs.branch }}
+        REPO_VITALS_ALLOW_FORK: ${{ inputs.allow-fork }}
+      run: python -m repo_vitals run --repo "$GITHUB_REPOSITORY"

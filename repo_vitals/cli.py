@@ -6,10 +6,21 @@ import argparse
 import os
 import sys
 
-from repo_vitals.collect import all_sections_failed, collect_snapshot
+from repo_vitals.collect import (
+    GitHubClient,
+    all_sections_failed,
+    collect_snapshot,
+    collect_star_history,
+    re_enable_workflow,
+)
+from repo_vitals.commit import publish_snapshot
 from repo_vitals.merge import load_history, merge_snapshot
 from repo_vitals.render import write_outputs
 from repo_vitals.schemas import assert_valid_snapshot
+
+
+def _env_flag(name):
+    return os.environ.get(name, "").lower() in ("1", "true", "yes")
 
 
 def main(argv=None) -> int:
@@ -19,7 +30,7 @@ def main(argv=None) -> int:
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    run = sub.add_parser("run", help="collect + merge + render (the daily pipeline)")
+    run = sub.add_parser("run", help="collect + merge + render + commit (the daily pipeline)")
     run.add_argument(
         "--repo",
         default=os.environ.get("GITHUB_REPOSITORY"),
@@ -46,6 +57,17 @@ def main(argv=None) -> int:
         help="PAT for the traffic endpoints; omit to skip traffic gracefully "
              "(default: $REPO_VITALS_TOKEN)",
     )
+    run.add_argument(
+        "--branch",
+        default=os.environ.get("REPO_VITALS_BRANCH") or "vitals",
+        help="data branch to push to (default: $REPO_VITALS_BRANCH or 'vitals')",
+    )
+    run.add_argument(
+        "--allow-fork",
+        action="store_true",
+        default=_env_flag("REPO_VITALS_ALLOW_FORK"),
+        help="run even if the repository is a fork (default: forks are a no-op)",
+    )
 
     args = parser.parse_args(argv)
     return _run(args)
@@ -55,29 +77,43 @@ def _run(args) -> int:
     if not args.repo:
         print("error: --repo is required (or set $GITHUB_REPOSITORY)", file=sys.stderr)
         return 2
-    if not args.dry_run:
-        print(
-            "error: the commit stage is not implemented yet (milestone M2); "
-            "use --dry-run to write to a local directory",
-            file=sys.stderr,
-        )
+    if not args.dry_run and not args.token:
+        print("error: pushing to the vitals branch requires --token (or $GITHUB_TOKEN)",
+              file=sys.stderr)
         return 2
 
+    client = GitHubClient(token=args.token)
     print(f"collecting snapshot for {args.repo} ...", file=sys.stderr)
     snapshot = collect_snapshot(
-        args.repo, token=args.token, traffic_token=args.traffic_token
+        args.repo, traffic_token=args.traffic_token, client=client
     )
     assert_valid_snapshot(snapshot)
 
     for err in snapshot["errors"]:
         print(f"warning: section {err['section']!r}: {err['error']}", file=sys.stderr)
 
-    history = load_history(os.path.join(args.output_dir, "history.ndjson"))
-    merge_snapshot(history, snapshot)
-    paths = write_outputs(args.output_dir, snapshot, history)
+    if (snapshot.get("meta") or {}).get("fork") and not args.allow_fork:
+        print(f"{args.repo} is a fork; skipping (pass --allow-fork to override)",
+              file=sys.stderr)
+        return 0
 
-    for path in paths:
-        print(f"wrote {path}")
+    if args.dry_run:
+        history = load_history(os.path.join(args.output_dir, "history.ndjson"))
+        merge_snapshot(history, snapshot)
+        for path in write_outputs(args.output_dir, snapshot, history):
+            print(f"wrote {path}")
+    else:
+        remote_url = f"https://x-access-token:{args.token}@github.com/{args.repo}.git"
+        result = publish_snapshot(
+            snapshot,
+            remote_url,
+            branch=args.branch,
+            backfill_star_history=lambda: collect_star_history(client, args.repo),
+        )
+        print(f"publish to {args.branch!r}: {result}", file=sys.stderr)
+        # keep our own cron alive (§7.1); needs `actions: write`, best-effort
+        if re_enable_workflow(client, args.repo):
+            print("workflow re-enabled", file=sys.stderr)
 
     if all_sections_failed(snapshot):
         print("error: every section failed to collect", file=sys.stderr)

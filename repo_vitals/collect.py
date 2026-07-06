@@ -14,6 +14,7 @@ Robustness rules (ARCHITECTURE.md §7):
 from __future__ import annotations
 
 import datetime as dt
+import os
 import re
 
 import requests
@@ -254,6 +255,48 @@ def _collect_activity(client, repo, now):
         "issues_closed_30d": data["issuesClosed"]["issueCount"],
         "contributors_total": _contributors_total(client, repo),
     }
+
+
+STARGAZER_QUERY = """
+query($owner: String!, $name: String!, $cursor: String) {
+  repository(owner: $owner, name: $name) {
+    stargazers(first: 100, after: $cursor,
+               orderBy: {field: STARRED_AT, direction: ASC}) {
+      pageInfo { hasNextPage endCursor }
+      edges { starredAt }
+    }
+  }
+}
+"""
+
+
+def collect_star_history(client, repo, max_pages=400):
+    """First-run backfill (§7.8): every starredAt date since repo birth, ascending."""
+    owner, name = repo.split("/", 1)
+    dates = []
+    cursor = None
+    for _ in range(max_pages):
+        data = client.graphql(STARGAZER_QUERY, {"owner": owner, "name": name,
+                                                "cursor": cursor})
+        stargazers = data["repository"]["stargazers"]
+        dates.extend(e["starredAt"][:10] for e in stargazers["edges"])
+        if not stargazers["pageInfo"]["hasNextPage"]:
+            break
+        cursor = stargazers["pageInfo"]["endCursor"]
+    return dates
+
+
+def re_enable_workflow(client, repo, workflow_ref=None):
+    """§7.1: GitHub disables cron workflows after 60 days without repo activity;
+    re-enable ours on every run. Best-effort — needs `actions: write`."""
+    ref = workflow_ref or os.environ.get("GITHUB_WORKFLOW_REF", "")
+    match = re.search(r"/([^/@]+\.ya?ml)@", ref)
+    if not match:
+        return False
+    resp = client.request(
+        "PUT", f"/repos/{repo}/actions/workflows/{match.group(1)}/enable"
+    )
+    return resp.status_code == 204
 
 
 def _contributors_total(client, repo):

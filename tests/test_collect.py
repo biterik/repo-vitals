@@ -5,7 +5,13 @@ import json
 
 from conftest import FIXTURES
 
-from repo_vitals.collect import API_ROOT, GitHubClient, collect_snapshot
+from repo_vitals.collect import (
+    API_ROOT,
+    GitHubClient,
+    collect_snapshot,
+    collect_star_history,
+    re_enable_workflow,
+)
 from repo_vitals.schemas import validate_snapshot
 
 REPO = "biterik/relevantr"
@@ -172,3 +178,41 @@ def test_empty_repo_contributors_204_means_zero():
     client, _ = make_client(routes)
     snap = collect_snapshot(REPO, traffic_token="tt", client=client, now=NOW)
     assert snap["activity"]["contributors_total"] == 0
+
+
+def stargazer_page(dates, cursor=None, has_next=False):
+    return FakeResponse(200, {"data": {"repository": {"stargazers": {
+        "pageInfo": {"hasNextPage": has_next, "endCursor": cursor},
+        "edges": [{"starredAt": f"{d}T12:00:00Z"} for d in dates],
+    }}}})
+
+
+def test_star_history_paginates():
+    pages = [
+        stargazer_page(["2026-01-05", "2026-01-05"], cursor="c1", has_next=True),
+        stargazer_page(["2026-02-01"]),
+    ]
+    requested_cursors = []
+
+    def graphql(_params, json_body):
+        requested_cursors.append(json_body["variables"]["cursor"])
+        return pages[len(requested_cursors) - 1]
+
+    client, _ = make_client({("POST", f"{API_ROOT}/graphql"): graphql})
+    dates = collect_star_history(client, REPO)
+    assert dates == ["2026-01-05", "2026-01-05", "2026-02-01"]
+    assert requested_cursors == [None, "c1"]
+
+
+def test_re_enable_workflow_parses_workflow_ref():
+    url = f"{API_ROOT}/repos/{REPO}/actions/workflows/repo-vitals.yml/enable"
+    client, session = make_client({("PUT", url): FakeResponse(204)})
+    ref = f"{REPO}/.github/workflows/repo-vitals.yml@refs/heads/main"
+    assert re_enable_workflow(client, REPO, workflow_ref=ref) is True
+    assert session.calls[-1]["url"] == url
+
+
+def test_re_enable_workflow_noop_without_ref():
+    client, session = make_client({})
+    assert re_enable_workflow(client, REPO, workflow_ref="") is False
+    assert session.calls == []

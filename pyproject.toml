@@ -28,6 +28,9 @@ Homepage = "https://github.com/biterik/repo-vitals"
 [tool.setuptools]
 packages = ["repo_vitals"]
 
+[tool.setuptools.package-data]
+repo_vitals = ["templates/*.j2"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

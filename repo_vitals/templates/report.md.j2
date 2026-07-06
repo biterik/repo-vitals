@@ -1,0 +1,64 @@
+# {{ snapshot.repo }} — repo vitals
+
+_Updated {{ snapshot.collected_at }} (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson)_
+
+{% if traffic_failing -%}
+> **⚠️ Traffic collection is failing{% if last_traffic_day %} — last traffic data: {{ last_traffic_day }}{% endif %}.**
+> Most likely the `REPO_VITALS_TOKEN` PAT is missing or expired (fine-grained PATs
+> expire after at most one year). See the [setup notes](https://github.com/biterik/repo-vitals#quickstart-target-ux).
+{%- endif %}
+
+## Snapshot
+
+| Metric | Value |
+|---|---:|
+{% if snapshot.popularity -%}
+| Stars | {{ snapshot.popularity.stars }} |
+| Forks | {{ snapshot.popularity.forks }} |
+| Watchers (subscribers) | {{ snapshot.popularity.subscribers }} |
+{% endif -%}
+{% if snapshot.meta -%}
+| Open issues | {{ snapshot.meta.open_issues }} |
+{% endif -%}
+| Days of recorded history | {{ history_days }} |
+
+{% if snapshot.traffic %}
+## Traffic (rolling 14-day window)
+
+| | Total | Peak day |
+|---|---:|---:|
+| Views | {{ views_total }} | {{ views_peak }} |
+| Clones | {{ clones_total }} | {{ clones_peak }} |
+
+{% if snapshot.traffic.referrers -%}
+**Top referrers:** {% for r in snapshot.traffic.referrers[:5] %}{{ r.referrer }} ({{ r.count }}){% if not loop.last %} · {% endif %}{% endfor %}
+{%- endif %}
+{% endif %}
+
+## Releases
+
+{% if snapshot.releases -%}
+| Tag | Published | Downloads |
+|---|---|---:|
+{% for r in snapshot.releases[:10] -%}
+| {{ r.tag }} | {{ (r.published_at or "")[:10] }} | {{ r.assets | sum(attribute="downloads") }} |
+{% endfor -%}
+{% else -%}
+No releases.
+{%- endif %}
+
+{% if snapshot.activity %}
+## Activity (last 30 days)
+
+{{ snapshot.activity.commits_30d }} commits · {{ snapshot.activity.prs_opened_30d }} PRs opened / {{ snapshot.activity.prs_merged_30d }} merged · {{ snapshot.activity.issues_opened_30d }} issues opened / {{ snapshot.activity.issues_closed_30d }} closed · {{ snapshot.activity.contributors_total }} contributors total
+{% endif %}
+
+{% if snapshot.errors %}
+## Collection warnings
+
+{% for e in snapshot.errors -%}
+- `{{ e.section }}`: {{ e.error }}
+{% endfor %}
+{% endif %}
+
+<sub>Generated daily by [repo-vitals](https://github.com/biterik/repo-vitals).</sub>

@@ -73,6 +73,23 @@ def summarize_releases(releases: list[dict]) -> list[dict]:
     ]
 
 
+def merge_star_backfill(history: dict[str, dict], starred_dates: list[str]) -> dict[str, dict]:
+    """First-run star backfill: sparse cumulative star count per day since repo birth.
+
+    Writes `stars_cumulative` only for days with at least one star event and
+    never overwrites a day that already has it (backfill runs once).
+    """
+    per_day: dict[str, int] = {}
+    for day in starred_dates:
+        per_day[day] = per_day.get(day, 0) + 1
+    total = 0
+    for day in sorted(per_day):
+        total += per_day[day]
+        rec = history.setdefault(day, {"date": day})
+        rec.setdefault("stars_cumulative", total)
+    return history
+
+
 def rebuild_history(snapshots: list[dict]) -> dict[str, dict]:
     """Regenerate history from raw snapshots alone (the audit-trail guarantee).
 

@@ -12,7 +12,16 @@ import datetime as dt
 import json
 from pathlib import Path
 
+import jinja2
+
 from repo_vitals.merge import dump_history
+
+_env = jinja2.Environment(
+    loader=jinja2.PackageLoader("repo_vitals", "templates"),
+    autoescape=False,
+    trim_blocks=True,
+    lstrip_blocks=True,
+)
 
 
 def build_vitals(snapshot: dict, history: dict[str, dict]) -> dict:
@@ -42,8 +51,36 @@ def _window_sum(history, kind, end, days):
     return sum(values) if values else None
 
 
+def render_report(snapshot: dict, history: dict[str, dict]) -> str:
+    """REPORT.md — human-readable daily summary (minimal for M2; M3 expands it).
+
+    Surfaces a failing traffic PAT loudly (§7.6b): the warning includes the
+    last day for which traffic data exists in history.
+    """
+    traffic = snapshot.get("traffic") or {}
+    traffic_failing = any(e["section"] == "traffic" for e in snapshot.get("errors", []))
+    traffic_days = sorted(day for day, rec in history.items() if "views" in rec)
+
+    def totals(kind):
+        counts = [c["count"] for c in (traffic.get(kind) or {}).values()]
+        return (sum(counts), max(counts)) if counts else (0, 0)
+
+    views_total, views_peak = totals("views")
+    clones_total, clones_peak = totals("clones")
+    return _env.get_template("report.md.j2").render(
+        snapshot=snapshot,
+        history_days=len(history),
+        traffic_failing=traffic_failing,
+        last_traffic_day=traffic_days[-1] if traffic_days else None,
+        views_total=views_total,
+        views_peak=views_peak,
+        clones_total=clones_total,
+        clones_peak=clones_peak,
+    )
+
+
 def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict]) -> list[Path]:
-    """Write snapshots/<date>.json, history.ndjson, and VITALS.json under out_dir."""
+    """Write snapshots/<date>.json, history.ndjson, VITALS.json, REPORT.md under out_dir."""
     out = Path(out_dir)
     (out / "snapshots").mkdir(parents=True, exist_ok=True)
 
@@ -59,4 +96,7 @@ def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict])
         json.dumps(build_vitals(snapshot, history), indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    return [snapshot_path, history_path, vitals_path]
+
+    report_path = out / "REPORT.md"
+    report_path.write_text(render_report(snapshot, history), encoding="utf-8")
+    return [snapshot_path, history_path, vitals_path, report_path]
