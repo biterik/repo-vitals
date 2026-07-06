@@ -1,32 +1,49 @@
 # biterik/repo-vitals — repo vitals
 
-_Updated 2026-07-06T13:57:03Z (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson)_
+![stars](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fstars.json) ![views/week](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fviews-week.json) ![health](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fhealth.json) 
+_Updated 2026-07-06T14:10:59Z (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson) · daily snapshots: [snapshots/](snapshots/)_
 
 
-## Snapshot
+## Summary
 
-| Metric | Value |
-|---|---:|
-| Stars | 0 |
-| Forks | 0 |
-| Watchers (subscribers) | 0 |
-| Open issues | 0 |
-| Days of recorded history | 14 |
+| Metric | 30 d | 90 d | 365 d |
+|---|---:|---:|---:|
+| Views | 0 | 0 | 0 |
+| Unique visitors¹ | 0 | 0 | 0 |
+| Clones | 0 | 0 | 0 |
+| Stars gained | 0 | 0 | 0 |
+| Release downloads gained | 0 | 0 | 0 |
 
-## Traffic (rolling 14-day window)
+¹ sum of daily unique counts — an upper bound on true period uniques.
 
-| | Total | Peak day |
-|---|---:|---:|
-| Views | 0 | 0 |
-| Clones | 0 | 0 |
+**Health: 8/100** (heuristic² — traffic trend 0, activity 20, community 8, release adoption 0)
+
+## Trends — last 30 days
+
+```
+views  ················▁▁▁▁▁▁▁▁▁▁▁▁▁▁  (0 total)
+clones ················▁▁▁▁▁▁▁▁▁▁▁▁▁▁  (0 total)
+```
+
+('·' = day without data)
+
+Stars: **0** (+0 in 30 d, +0 in 7 d)
+**Conversion funnel (30 d):** 0 unique visitors → 0 unique cloners → 0 stars gained → 0 downloads gained
 
 
 ## Releases
 
 No releases.
+
 ## Activity (last 30 days)
 
-3 commits · 0 PRs opened / 0 merged · 0 issues opened / 0 closed · 1 contributors total
+5 commits · 0 PRs opened / 0 merged · 0 issues opened / 0 closed · 1 contributors total
 
+
+---
+
+² Health score and milestone ETAs are simple labeled heuristics computed from
+this repo's history — see [repo-vitals](https://github.com/biterik/repo-vitals)
+for the formulas. Interactive dashboard (`index.html`) arrives with milestone M4.
 
 <sub>Generated daily by [repo-vitals](https://github.com/biterik/repo-vitals).</sub>
