@@ -1,0 +1,24 @@
+# Standard Actions release flow (§8): pushing a SemVer tag moves the floating
+# major tag (v1) so consumer repos pinned to biterik/repo-vitals@v1 pick up
+# fixes without PRs.
+name: release
+
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+permissions:
+  contents: write
+
+jobs:
+  move-major-tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Move major tag to this release
+        run: |
+          MAJOR="${GITHUB_REF_NAME%%.*}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -f "$MAJOR" "$GITHUB_REF_NAME"
+          git push -f origin "$MAJOR"
