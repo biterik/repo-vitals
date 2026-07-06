@@ -1,13 +1,45 @@
 # repo-vitals
 
-**Long-term GitHub repository statistics with zero infrastructure.**
-A daily GitHub Action archives your repo's traffic, stars, releases, and
-activity to a `vitals` branch — with a daily report, machine-readable data,
-live badges, and an interactive dashboard, all at stable URLs.
+![stars](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fstars.json)
+![views](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fviews-week.json)
+![health](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fhealth.json)
+(live badges — served from this repo's own `vitals` branch)
 
-GitHub deletes traffic data (views, clones, referrers) after **14 days**.
-repo-vitals keeps it forever, inside your own repository: no server, no
-database, no external service.
+**Your repository has a story. GitHub only remembers the last 14 days of it.**
+
+repo-vitals is a tiny GitHub Action that turns any repository into its own
+permanent analytics archive. Every day it records traffic, stars, releases,
+and activity to a `vitals` branch in the repo itself — and publishes a daily
+report, machine-readable data, live badges, and an interactive dashboard at
+stable URLs. **No server. No database. No external service. Your data stays
+in your repo, forever.**
+
+## Why?
+
+**If you maintain open-source software**, GitHub's built-in insights can't
+answer the questions you actually have: *Is my project growing? Did that
+release bring anyone in? What caused Tuesday's spike? Where do visitors come
+from — and do they stick around?* GitHub deletes traffic data (views, clones,
+referrers) after 14 days, so by the time you wonder, the evidence is gone.
+repo-vitals keeps every day since instrumentation and turns it into trends,
+release-impact overlays, a conversion funnel (visitors → clones → stars →
+downloads), star-milestone forecasts, and a health score — plus README badges
+that show your project is alive.
+
+**If you manage a portfolio of repositories** — a research consortium, an
+institute, a company's open-source projects — you have to *report* on them:
+to funders, in grant renewals, in annual reviews. repo-vitals gives every
+repo a daily, stable-URL `REPORT.md` and `VITALS.json` that anyone can
+download or script against, with zero coordination: no accounts, no
+dashboards behind logins, no asking maintainers for numbers. It was built
+for exactly this case in the [NFDI-MatWerk](https://nfdi-matwerk.de)
+consortium, and the upcoming **hub** (see below) aggregates a whole fleet
+into one dashboard and one grant-ready report.
+
+Adoption is one ~15-line workflow file per repo — or one command for your
+entire account (see [fleet rollout](#instrument-many-repositories-at-once)).
+Your default branch is never touched, and if you ever stop using it, the
+archive remains: plain JSON and markdown in a git branch you own.
 
 ## What you get
 
@@ -129,6 +161,34 @@ downloads, activity). To view it:
 metrics; schema in [`schema/vitals.schema.json`](schema/vitals.schema.json))
 or `history.ndjson` (one JSON object per day).
 
+## Watch a whole fleet: the hub *(upcoming — milestone M6)*
+
+For consortia and project managers, a companion **hub** repository (created
+once from a template) tracks any number of instrumented repos:
+
+```yaml
+# hub config: just a list — including repos you don't own
+repos:
+  - biterik/openbis-mcp-server
+  - biterik/LAMMPS-compile-n-bench
+  - nfdi-matwerk/some-repo
+```
+
+A daily cron fetches each repo's published `VITALS.json` (public raw URLs —
+**read-only, no permissions, no coordination with the repo owners**) and
+builds:
+
+- an **aggregate dashboard** on GitHub Pages: the whole portfolio at a glance,
+- a **combined REPORT.md** — the document you attach to a funder report,
+- a **watchdog** that flags repos whose data has gone stale (expired token,
+  disabled cron), so silent failures get noticed.
+
+That means anyone with a list of NFDI-MatWerk repositories can stand up
+their own fleet report, self-service. The only prerequisite: each tracked
+repo has repo-vitals installed (its `vitals` branch must exist) — which is
+what the [2-minute install](#install-instrument-a-repository-2-minutes) and
+[fleet rollout](#instrument-many-repositories-at-once) are for.
+
 ## Generate reports yourself (no Action needed)
 
 Everything the Action does can be run locally with Python ≥ 3.11:
@@ -177,7 +237,8 @@ format, or decades later.
   auto-disable hits; forks are a no-op by default.
 - Full design: [ARCHITECTURE.md](ARCHITECTURE.md). Milestone status:
   M1–M5 done (collector/merge, action, reports/badges, dashboard, rollout);
-  M6 (multi-repo hub) and M7 (Zenodo/citation metrics) upcoming.
+  M6 (the multi-repo hub) and M7 (Zenodo DOI citations/downloads for
+  research software) upcoming.
 
 ## Local development
 
