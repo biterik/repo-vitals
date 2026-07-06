@@ -1,51 +1,80 @@
 # {{ snapshot.repo }} — repo vitals
 
-_Updated {{ snapshot.collected_at }} (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson)_
+{% for label, url in badges %}![{{ label }}]({{ url }}) {% endfor %}
 
-{% if traffic_failing -%}
+_Updated {{ snapshot.collected_at }} (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson) · daily snapshots: [snapshots/](snapshots/)_
+
+{% if traffic_failing %}
 > **⚠️ Traffic collection is failing{% if last_traffic_day %} — last traffic data: {{ last_traffic_day }}{% endif %}.**
 > Most likely the `REPO_VITALS_TOKEN` PAT is missing or expired (fine-grained PATs
 > expire after at most one year). See the [setup notes](https://github.com/biterik/repo-vitals#quickstart-target-ux).
-{%- endif %}
+{% endif %}
 
-## Snapshot
+## Summary
 
-| Metric | Value |
-|---|---:|
-{% if snapshot.popularity -%}
-| Stars | {{ snapshot.popularity.stars }} |
-| Forks | {{ snapshot.popularity.forks }} |
-| Watchers (subscribers) | {{ snapshot.popularity.subscribers }} |
-{% endif -%}
-{% if snapshot.meta -%}
-| Open issues | {{ snapshot.meta.open_issues }} |
-{% endif -%}
-| Days of recorded history | {{ history_days }} |
+| Metric | 30 d | 90 d | 365 d |
+|---|---:|---:|---:|
+| Views | {{ windows["30d"].views | dash }} | {{ windows["90d"].views | dash }} | {{ windows["365d"].views | dash }} |
+| Unique visitors¹ | {{ windows["30d"].unique_visitors | dash }} | {{ windows["90d"].unique_visitors | dash }} | {{ windows["365d"].unique_visitors | dash }} |
+| Clones | {{ windows["30d"].clones | dash }} | {{ windows["90d"].clones | dash }} | {{ windows["365d"].clones | dash }} |
+| Stars gained | {{ windows["30d"].stars_gained | dash }} | {{ windows["90d"].stars_gained | dash }} | {{ windows["365d"].stars_gained | dash }} |
+| Release downloads gained | {{ windows["30d"].downloads_gained | dash }} | {{ windows["90d"].downloads_gained | dash }} | {{ windows["365d"].downloads_gained | dash }} |
 
-{% if snapshot.traffic %}
-## Traffic (rolling 14-day window)
+¹ sum of daily unique counts — an upper bound on true period uniques.
 
-| | Total | Peak day |
+**Health: {{ health.score }}/100** (heuristic² — traffic trend {{ health.components.traffic_trend }}, activity {{ health.components.activity }}, community {{ health.components.community }}, release adoption {{ health.components.release_adoption }})
+
+## Trends — last {{ spark_days }} days
+
+```
+views  {{ views_spark }}  ({{ views_30d_total | dash }} total)
+clones {{ clones_spark }}  ({{ clones_30d_total | dash }} total)
+```
+
+('·' = day without data)
+
+Stars: **{{ derived.stars_now | dash }}**{% if derived.stars_gained_30d is not none %} ({{ "%+d" | format(derived.stars_gained_30d) }} in 30 d{% if derived.stars_gained_7d is not none %}, {{ "%+d" | format(derived.stars_gained_7d) }} in 7 d{% endif %}){% endif %}
+{% if forecast.next_milestone and (forecast.eta_linear or forecast.eta_exponential) %}
+Next milestone **{{ forecast.next_milestone }}★**: {% if forecast.eta_linear %}~{{ forecast.eta_linear }} (linear{% if forecast.stars_per_day %}, {{ forecast.stars_per_day }}★/day{% endif %}){% endif %}{% if forecast.eta_linear and forecast.eta_exponential %} · {% endif %}{% if forecast.eta_exponential %}~{{ forecast.eta_exponential }} (exponential){% endif %} — naive 90-day extrapolation²
+{% endif %}
+
+**Conversion funnel (30 d):** {{ funnel.unique_visitors | dash }} unique visitors → {{ funnel.unique_cloners | dash }} unique cloners → {{ funnel.stars_gained | dash }} stars gained → {{ funnel.downloads_gained | dash }} downloads gained
+
+{% if snapshot.traffic and (snapshot.traffic.referrers or snapshot.traffic.paths) %}
+## Where visitors come from (14-day window)
+
+{% if snapshot.traffic.referrers %}
+| Referrer | Views | Unique |
 |---|---:|---:|
-| Views | {{ views_total }} | {{ views_peak }} |
-| Clones | {{ clones_total }} | {{ clones_peak }} |
+{% for r in snapshot.traffic.referrers[:8] %}
+| {{ r.referrer }} | {{ r.count }} | {{ r.uniques }} |
+{% endfor %}
+{% endif %}
+{% if snapshot.traffic.paths %}
 
-{% if snapshot.traffic.referrers -%}
-**Top referrers:** {% for r in snapshot.traffic.referrers[:5] %}{{ r.referrer }} ({{ r.count }}){% if not loop.last %} · {% endif %}{% endfor %}
-{%- endif %}
+| Popular path | Views | Unique |
+|---|---:|---:|
+{% for p in snapshot.traffic.paths[:8] %}
+| `{{ p.path }}` | {{ p.count }} | {{ p.uniques }} |
+{% endfor %}
+{% endif %}
 {% endif %}
 
 ## Releases
 
-{% if snapshot.releases -%}
+{% if snapshot.releases %}
 | Tag | Published | Downloads |
 |---|---|---:|
-{% for r in snapshot.releases[:10] -%}
+{% for r in snapshot.releases[:10] %}
 | {{ r.tag }} | {{ (r.published_at or "")[:10] }} | {{ r.assets | sum(attribute="downloads") }} |
-{% endfor -%}
-{% else -%}
+{% endfor %}
+{% if derived.downloads_total is not none %}
+
+Total release downloads: **{{ derived.downloads_total }}**{% if derived.downloads_gained_30d %} ({{ "%+d" | format(derived.downloads_gained_30d) }} in 30 d){% endif %}
+{% endif %}
+{% else %}
 No releases.
-{%- endif %}
+{% endif %}
 
 {% if snapshot.activity %}
 ## Activity (last 30 days)
@@ -56,9 +85,15 @@ No releases.
 {% if snapshot.errors %}
 ## Collection warnings
 
-{% for e in snapshot.errors -%}
+{% for e in snapshot.errors %}
 - `{{ e.section }}`: {{ e.error }}
 {% endfor %}
 {% endif %}
+
+---
+
+² Health score and milestone ETAs are simple labeled heuristics computed from
+this repo's history — see [repo-vitals](https://github.com/biterik/repo-vitals)
+for the formulas. Interactive dashboard (`index.html`) arrives with milestone M4.
 
 <sub>Generated daily by [repo-vitals](https://github.com/biterik/repo-vitals).</sub>

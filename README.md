@@ -12,7 +12,7 @@ the full design. Milestone progress:
 
 - [x] M1 — collector + traffic-window merge + tests
 - [x] M2 — commit stage + composite action (dogfood)
-- [ ] M3 — REPORT.md, badges, derived metrics
+- [x] M3 — REPORT.md, badges, derived metrics
 - [ ] M4 — dashboard
 - [ ] M5 — fleet rollout script
 - [ ] M6 — hub template
@@ -44,6 +44,25 @@ Daily data appears on the `vitals` branch at stable raw URLs:
 ```
 https://raw.githubusercontent.com/<owner>/<repo>/vitals/VITALS.json
 https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md
+```
+
+## Badges
+
+Every instrumented repo gets shields.io endpoint files on the vitals branch
+(`badge/stars.json`, `badge/views-week.json`, `badge/health.json`). Show them
+in your README:
+
+```markdown
+![stars](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2F<owner>%2F<repo>%2Fvitals%2Fbadge%2Fstars.json)
+```
+
+## Rebuilding reports from data
+
+Rendering is a pure function of the archived data (survivability guarantee):
+
+```sh
+git clone --branch vitals https://github.com/<owner>/<repo> vitals-data
+python -m repo_vitals render --data-dir vitals-data
 ```
 
 ## Local development

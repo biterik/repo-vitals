@@ -87,7 +87,7 @@ def publish_snapshot(
                         "error": f"{type(exc).__name__}: {exc}",
                     })
             merge_snapshot(history, snapshot)
-            write_outputs(workdir, snapshot, history)
+            write_outputs(workdir, snapshot, history, branch=branch)
 
             _git(["add", "-A"], cwd=workdir)
             status = _git(["status", "--porcelain"], cwd=workdir)

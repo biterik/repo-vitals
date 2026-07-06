@@ -69,8 +69,43 @@ def main(argv=None) -> int:
         help="run even if the repository is a fork (default: forks are a no-op)",
     )
 
+    render = sub.add_parser(
+        "render",
+        help="rebuild VITALS.json/REPORT.md/badges from existing data alone (no API calls)",
+    )
+    render.add_argument(
+        "--data-dir",
+        required=True,
+        help="directory holding history.ndjson and snapshots/ (e.g. a vitals checkout)",
+    )
+    render.add_argument(
+        "--branch",
+        default=os.environ.get("REPO_VITALS_BRANCH") or "vitals",
+        help="data branch name, used for badge URLs (default: 'vitals')",
+    )
+
     args = parser.parse_args(argv)
+    if args.command == "render":
+        return _render(args)
     return _run(args)
+
+
+def _render(args) -> int:
+    """§7.9 determinism: rendering is a pure function of history + templates."""
+    import glob
+    import json
+
+    snapshot_files = sorted(glob.glob(os.path.join(args.data_dir, "snapshots", "*.json")))
+    if not snapshot_files:
+        print(f"error: no snapshots/*.json under {args.data_dir}", file=sys.stderr)
+        return 2
+    with open(snapshot_files[-1], encoding="utf-8") as fh:
+        snapshot = json.load(fh)
+    assert_valid_snapshot(snapshot)
+    history = load_history(os.path.join(args.data_dir, "history.ndjson"))
+    for path in write_outputs(args.data_dir, snapshot, history, branch=args.branch):
+        print(f"wrote {path}")
+    return 0
 
 
 def _run(args) -> int:
@@ -100,7 +135,7 @@ def _run(args) -> int:
     if args.dry_run:
         history = load_history(os.path.join(args.output_dir, "history.ndjson"))
         merge_snapshot(history, snapshot)
-        for path in write_outputs(args.output_dir, snapshot, history):
+        for path in write_outputs(args.output_dir, snapshot, history, branch=args.branch):
             print(f"wrote {path}")
     else:
         remote_url = f"https://x-access-token:{args.token}@github.com/{args.repo}.git"

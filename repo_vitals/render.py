@@ -1,19 +1,20 @@
 """Render stage: turn snapshot + history into the published artifacts.
 
-M1 scope: VITALS.json (latest snapshot + a first cut of derived metrics)
-plus the dry-run file layout. REPORT.md and index.html arrive in M3/M4;
-rendering stays a pure function of history + templates so everything can be
-rebuilt from the vitals branch alone.
+Rendering is a pure function of history + templates (§7.9): the `render`
+CLI subcommand can rebuild VITALS.json, REPORT.md, and the badge endpoints
+from the vitals branch data alone at any time.
 """
 
 from __future__ import annotations
 
 import datetime as dt
 import json
+import urllib.parse
 from pathlib import Path
 
 import jinja2
 
+from repo_vitals.derived import compute_derived
 from repo_vitals.merge import dump_history
 
 _env = jinja2.Environment(
@@ -22,81 +23,147 @@ _env = jinja2.Environment(
     trim_blocks=True,
     lstrip_blocks=True,
 )
+_env.filters["dash"] = lambda v: "–" if v is None else v
+
+SPARK_BLOCKS = "▁▂▃▄▅▆▇█"
+SPARK_DAYS = 30
 
 
 def build_vitals(snapshot: dict, history: dict[str, dict]) -> dict:
     """VITALS.json content: the latest snapshot plus derived rollups."""
-    return {**snapshot, "derived": _derived(snapshot, history)}
+    return {**snapshot, "derived": compute_derived(snapshot, history)}
 
 
-def _derived(snapshot: dict, history: dict[str, dict]) -> dict:
-    end = dt.date.fromisoformat(snapshot["date"])
+def sparkline(values) -> str:
+    """Unicode sparkline; None (day without data) renders as '·'."""
+    present = [v for v in values if v is not None]
+    if not present:
+        return ""
+    lo, hi = min(present), max(present)
+    span = (hi - lo) or 1
+    return "".join(
+        "·" if v is None else SPARK_BLOCKS[round((v - lo) / span * 7)]
+        for v in values
+    )
+
+
+def daily_series(history, kind, end, days):
+    """Daily counts for the trailing window, None where history has a hole."""
+    out = []
+    for offset in range(days - 1, -1, -1):
+        day = (end - dt.timedelta(days=offset)).isoformat()
+        rec = history.get(day)
+        out.append(rec[kind]["count"] if rec and kind in rec else None)
+    return out
+
+
+def badge_url(repo, branch, filename):
+    raw = f"https://raw.githubusercontent.com/{repo}/{branch}/badge/{filename}"
+    return "https://img.shields.io/endpoint?url=" + urllib.parse.quote_plus(raw)
+
+
+def build_badges(snapshot: dict, derived: dict) -> dict[str, dict]:
+    """shields.io endpoint JSON files (§6): badge/<name>.json."""
+    stars = derived.get("stars_now")
+    gained = derived.get("stars_gained_30d")
+    stars_msg = "n/a" if stars is None else str(stars)
+    if stars is not None and gained:
+        stars_msg += f" (+{gained}/30d)" if gained > 0 else f" ({gained}/30d)"
+
+    views = derived.get("views_last_7d")
+    prev = derived.get("views_prev_7d")
+    if views is None:
+        views_msg, views_color = "no data", "lightgrey"
+    else:
+        views_msg = f"{views}/wk"
+        if prev is None:
+            views_color = "blue"
+        else:
+            views_color = "brightgreen" if views > prev else ("orange" if views < prev else "blue")
+
+    score = derived["health"]["score"]
+    health_color = ("brightgreen" if score >= 70 else
+                    "yellowgreen" if score >= 55 else
+                    "yellow" if score >= 40 else
+                    "orange" if score >= 25 else "red")
+
+    def endpoint(label, message, color):
+        return {"schemaVersion": 1, "label": label, "message": str(message), "color": color}
+
     return {
-        "views_last_7d": _window_sum(history, "views", end, 7),
-        "views_last_30d": _window_sum(history, "views", end, 30),
-        "clones_last_7d": _window_sum(history, "clones", end, 7),
-        "clones_last_30d": _window_sum(history, "clones", end, 30),
-        "history_days": len(history),
+        "stars.json": endpoint("stars", stars_msg, "blue"),
+        "views-week.json": endpoint("views", views_msg, views_color),
+        "health.json": endpoint("health", f"{score}/100", health_color),
     }
 
 
-def _window_sum(history, kind, end, days):
-    """Sum of daily counts over the window, or None if no day has data."""
-    start = (end - dt.timedelta(days=days - 1)).isoformat()
-    values = [
-        rec[kind]["count"]
-        for day, rec in history.items()
-        if start <= day <= end.isoformat() and kind in rec
-    ]
-    return sum(values) if values else None
-
-
-def render_report(snapshot: dict, history: dict[str, dict]) -> str:
-    """REPORT.md — human-readable daily summary (minimal for M2; M3 expands it).
+def render_report(snapshot: dict, history: dict[str, dict], branch: str = "vitals") -> str:
+    """REPORT.md — the daily human-readable summary (§6).
 
     Surfaces a failing traffic PAT loudly (§7.6b): the warning includes the
     last day for which traffic data exists in history.
     """
-    traffic = snapshot.get("traffic") or {}
+    derived = compute_derived(snapshot, history)
+    end = dt.date.fromisoformat(snapshot["date"])
     traffic_failing = any(e["section"] == "traffic" for e in snapshot.get("errors", []))
     traffic_days = sorted(day for day, rec in history.items() if "views" in rec)
 
-    def totals(kind):
-        counts = [c["count"] for c in (traffic.get(kind) or {}).values()]
-        return (sum(counts), max(counts)) if counts else (0, 0)
+    views_daily = daily_series(history, "views", end, SPARK_DAYS)
+    clones_daily = daily_series(history, "clones", end, SPARK_DAYS)
 
-    views_total, views_peak = totals("views")
-    clones_total, clones_peak = totals("clones")
+    repo = snapshot["repo"]
     return _env.get_template("report.md.j2").render(
         snapshot=snapshot,
-        history_days=len(history),
+        derived=derived,
+        health=derived["health"],
+        forecast=derived["star_forecast"],
+        windows=derived["windows"],
+        funnel=derived["funnel_30d"],
         traffic_failing=traffic_failing,
         last_traffic_day=traffic_days[-1] if traffic_days else None,
-        views_total=views_total,
-        views_peak=views_peak,
-        clones_total=clones_total,
-        clones_peak=clones_peak,
+        views_spark=sparkline(views_daily),
+        clones_spark=sparkline(clones_daily),
+        views_30d_total=derived["views_last_30d"],
+        clones_30d_total=derived["clones_last_30d"],
+        spark_days=SPARK_DAYS,
+        badges=[
+            ("stars", badge_url(repo, branch, "stars.json")),
+            ("views/week", badge_url(repo, branch, "views-week.json")),
+            ("health", badge_url(repo, branch, "health.json")),
+        ],
     )
 
 
-def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict]) -> list[Path]:
-    """Write snapshots/<date>.json, history.ndjson, VITALS.json, REPORT.md under out_dir."""
+def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict],
+                  branch: str = "vitals") -> list[Path]:
+    """Write snapshots/<date>.json, history.ndjson, VITALS.json, REPORT.md,
+    and badge/*.json under out_dir."""
     out = Path(out_dir)
     (out / "snapshots").mkdir(parents=True, exist_ok=True)
+    (out / "badge").mkdir(parents=True, exist_ok=True)
 
-    snapshot_path = out / "snapshots" / f"{snapshot['date']}.json"
-    snapshot_path.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n",
-                             encoding="utf-8")
+    paths = []
+
+    def write_json(relpath, payload):
+        path = out / relpath
+        path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n",
+                        encoding="utf-8")
+        paths.append(path)
+
+    write_json(f"snapshots/{snapshot['date']}.json", snapshot)
 
     history_path = out / "history.ndjson"
     history_path.write_text(dump_history(history), encoding="utf-8")
+    paths.append(history_path)
 
-    vitals_path = out / "VITALS.json"
-    vitals_path.write_text(
-        json.dumps(build_vitals(snapshot, history), indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
+    write_json("VITALS.json", build_vitals(snapshot, history))
 
     report_path = out / "REPORT.md"
-    report_path.write_text(render_report(snapshot, history), encoding="utf-8")
-    return [snapshot_path, history_path, vitals_path, report_path]
+    report_path.write_text(render_report(snapshot, history, branch=branch),
+                           encoding="utf-8")
+    paths.append(report_path)
+
+    for name, payload in build_badges(snapshot, compute_derived(snapshot, history)).items():
+        write_json(f"badge/{name}", payload)
+
+    return paths
