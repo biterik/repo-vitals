@@ -177,6 +177,9 @@ def test_build_hub_outputs_and_watchdog(tmp_path):
 
     html = (tmp_path / "index.html").read_text()
     assert 'fetch("hub-data.json")' in html
+    # clones/downloads are charted, not just numbers buried in the fleet table
+    assert 'id="clones-bar"' in html and 'id="downloads-bar"' in html
+    assert "e.clones_30d" in html and "e.downloads_total" in html
     assert html.count("<script src=") == 1 and "echarts@5.5.1" in html
 
 

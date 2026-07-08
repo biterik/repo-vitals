@@ -85,6 +85,10 @@ footer a { color:var(--accent); }
       <div><h2>Stars by repository</h2><div class="chart" id="stars-bar"></div></div>
       <div><h2>Views (30 d) by repository</h2><div class="chart" id="views-bar"></div></div>
     </section>
+    <section class="grid2">
+      <div><h2>Clones (30 d) by repository</h2><div class="chart" id="clones-bar"></div></div>
+      <div><h2>Release downloads by repository</h2><div class="chart" id="downloads-bar"></div></div>
+    </section>
     <section>
       <h2>Stars over time</h2>
       <div class="chart tall" id="stars-time"></div>
@@ -175,7 +179,8 @@ footer a { color:var(--accent); }
     }).join("");
 
   if (typeof echarts === "undefined") {
-    for (const id of ["stars-bar", "views-bar", "stars-time", "views-time"]) {
+    for (const id of ["stars-bar", "views-bar", "clones-bar", "downloads-bar",
+                       "stars-time", "views-time"]) {
       const el = $(id);
       el.classList.add("empty");
       el.textContent = "charts unavailable — the ECharts CDN could not be reached";
@@ -199,10 +204,11 @@ footer a { color:var(--accent); }
   }
   window.addEventListener("resize", () => charts.forEach((c) => c.resize()));
 
-  const reporting = repos.filter((e) => e.stars != null || e.views_30d != null);
+  const reporting = repos.filter((e) =>
+    e.stars != null || e.views_30d != null || e.clones_30d != null || e.downloads_total != null);
   const names = reporting.map((e) => e.repo.split("/")[1] || e.repo);
   function bar(id, values) {
-    makeChart(id, reporting.length > 0, {
+    makeChart(id, reporting.length > 0 && values.some((v) => v != null), {
       tooltip: {},
       grid: { left: 60, right: 16, top: 16, bottom: 60 },
       xAxis: { type: "category", data: names, axisLabel: { rotate: 25 } },
@@ -212,6 +218,8 @@ footer a { color:var(--accent); }
   }
   bar("stars-bar", reporting.map((e) => e.stars));
   bar("views-bar", reporting.map((e) => e.views_30d));
+  bar("clones-bar", reporting.map((e) => e.clones_30d));
+  bar("downloads-bar", reporting.map((e) => e.downloads_total));
 
   function timeChart(id, key) {
     const series = repos
