@@ -14,13 +14,25 @@ aligned version metadata.
 
 ### Docs
 
-- README rewritten with a "Quickstart: which of these is you?" section and
-  precise, copy-pasteable instructions for three audiences: a single-repo
-  owner, someone viewing their own vitals, and an admin/PI running a hub
-  for repos other people own — including exactly when a workflow run is
-  required (vs. just adding a file), exact `gh pr merge` / browser steps for
-  merging the rollout PR, and the exact clone/edit/push/trigger commands for
-  the hub, plus a table of every URL where results end up.
+- README rewritten from scratch around a "Two separate things" mental model:
+  `repo-vitals` (the engine — added to a repo you own, never cloned) versus
+  the hub (a separate repository you create once from a public template —
+  also never requires a `repo-vitals` clone). Corrects an earlier,
+  overstated claim that pushing `hub-config.yml` doesn't rebuild the hub
+  site; it does, automatically, via `hub.yml`'s
+  `push: paths: [hub-config.yml]` trigger — manual "Run workflow" is now
+  documented as an optional immediate-rebuild shortcut, not a required step.
+  Reorganized into four numbered parts (track one repo, track many of your
+  own, view your vitals, the hub) plus a reference table of every file/URL
+  produced, replacing the earlier "Quickstart: which of these is you?"
+  section.
+- Fixed a long-standing broken anchor link (`#quickstart-target-ux`, which
+  never corresponded to any README heading) in the traffic-collection
+  warning banner of every generated `REPORT.md`; updated three other
+  cross-file anchor references (`report.md.j2`, `hub-report.md.j2`,
+  `hub-template/README.md`) to match the renamed headings.
+- `hub-template/README.md` reordered (enable Pages before editing config)
+  and rewritten to match the corrected auto-rebuild-on-push behavior.
 - Clarified precisely what `git clone` does and doesn't bring down from the
   orphan `vitals` branch (fetched into `.git`, not checked out into the
   working tree without `--branch vitals`).
