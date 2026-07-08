@@ -172,13 +172,21 @@ def _fetch_series(session, base, now):
     """Trimmed per-day series for the hub's own charts, plus the raw
     history.ndjson text (for mirroring the repo's own dashboard). Both are
     None on any failure — non-fatal, the fleet report/dashboard just show
-    less."""
+    less.
+
+    Four series, all sourced from fields already recorded in history.ndjson
+    (see merge.py) — no new data collection needed: `views`/`clones` are
+    traffic-window fields present for any day covered by some run's 14-day
+    window; `stars`/`downloads` are point-in-time fields present only for
+    days a run actually happened, so they're sparser (gaps stay gaps, never
+    interpolated — consistent with the per-repo dashboard's own charts).
+    """
     try:
         resp = session.get(f"{base}/history.ndjson", timeout=30)
         if resp.status_code != 200:
             return None, None
         cutoff = (now.date() - dt.timedelta(days=SERIES_DAYS)).isoformat()
-        views, stars = [], []
+        views, clones, stars, downloads = [], [], [], []
         for line in resp.text.splitlines():
             line = line.strip()
             if not line:
@@ -189,12 +197,17 @@ def _fetch_series(session, base, now):
                 continue
             if "views" in rec:
                 views.append([day, rec["views"]["count"]])
+            if "clones" in rec:
+                clones.append([day, rec["clones"]["count"]])
             pop = rec.get("popularity")
             if pop and pop.get("stars") is not None:
                 stars.append([day, pop["stars"]])
             elif rec.get("stars_cumulative") is not None:
                 stars.append([day, rec["stars_cumulative"]])
-        return {"views": views, "stars": stars}, resp.text
+            if rec.get("releases") is not None:
+                downloads.append([day, sum(r.get("downloads", 0) for r in rec["releases"])])
+        series = {"views": views, "clones": clones, "stars": stars, "downloads": downloads}
+        return series, resp.text
     except (requests.RequestException, ValueError):
         return None, None
 

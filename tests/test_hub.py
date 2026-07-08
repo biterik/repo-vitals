@@ -138,14 +138,21 @@ def test_series_trimmed_from_history():
     history = "\n".join([
         json.dumps({"date": "2025-01-01", "views": {"count": 9, "uniques": 1}}),  # old, cut
         json.dumps({"date": "2026-07-01", "views": {"count": 3, "uniques": 1},
-                    "popularity": {"stars": 8}}),
-        json.dumps({"date": "2026-07-05", "stars_cumulative": 9}),
+                    "clones": {"count": 2, "uniques": 1},
+                    "popularity": {"stars": 8},
+                    "releases": [{"tag": "v1.0", "downloads": 5},
+                                 {"tag": "v0.9", "downloads": 2}]}),
+        json.dumps({"date": "2026-07-05", "stars_cumulative": 9, "releases": []}),
     ])
     session = FakeSession(routes_for(repo, vitals_payload(repo, "2026-07-06T03:17:00Z"),
                                      history_lines=history))
     series = fetch_repo_status(session, repo, now=NOW)["series"]
     assert series["views"] == [["2026-07-01", 3]]
+    assert series["clones"] == [["2026-07-01", 2]]
     assert series["stars"] == [["2026-07-01", 8], ["2026-07-05", 9]]
+    # downloads is the sum across all release tags that day, sparse like
+    # stars (only present on days a run actually happened)
+    assert series["downloads"] == [["2026-07-01", 7], ["2026-07-05", 0]]
 
 
 # ---------------------------------------------------------------- build
@@ -183,6 +190,10 @@ def test_build_hub_outputs_and_watchdog(tmp_path):
     # clones/downloads are charted, not just numbers buried in the fleet table
     assert 'id="clones-bar"' in html and 'id="downloads-bar"' in html
     assert "e.clones_30d" in html and "e.downloads_total" in html
+    # ...and as trends over time, not just a single current-total bar
+    assert 'id="clones-time"' in html and 'id="downloads-time"' in html
+    assert 'timeChart("clones-time", "clones")' in html
+    assert 'timeChart("downloads-time", "downloads")' in html
     assert html.count("<script src=") == 1 and "echarts@5.5.1" in html
 
 

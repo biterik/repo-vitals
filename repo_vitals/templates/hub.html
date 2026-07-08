@@ -97,6 +97,14 @@ footer a { color:var(--accent); }
       <h2>Daily views over time</h2>
       <div class="chart tall" id="views-time"></div>
     </section>
+    <section>
+      <h2>Daily clones over time</h2>
+      <div class="chart tall" id="clones-time"></div>
+    </section>
+    <section>
+      <h2>Release downloads over time</h2>
+      <div class="chart tall" id="downloads-time"></div>
+    </section>
   </main>
   <footer>
     Aggregated read-only from each repository's public <code>vitals</code> branch ·
@@ -180,7 +188,7 @@ footer a { color:var(--accent); }
 
   if (typeof echarts === "undefined") {
     for (const id of ["stars-bar", "views-bar", "clones-bar", "downloads-bar",
-                       "stars-time", "views-time"]) {
+                       "stars-time", "views-time", "clones-time", "downloads-time"]) {
       const el = $(id);
       el.classList.add("empty");
       el.textContent = "charts unavailable — the ECharts CDN could not be reached";
@@ -229,7 +237,7 @@ footer a { color:var(--accent); }
         type: "line",
         showSymbol: false,
         connectNulls: false,
-        step: key === "stars" ? "end" : undefined,
+        step: (key === "stars" || key === "downloads") ? "end" : undefined,
         data: e.series[key],
       }));
     makeChart(id, series.length > 0, {
@@ -243,6 +251,8 @@ footer a { color:var(--accent); }
   }
   timeChart("stars-time", "stars");
   timeChart("views-time", "views");
+  timeChart("clones-time", "clones");
+  timeChart("downloads-time", "downloads");
 })();
 </script>
 </body>

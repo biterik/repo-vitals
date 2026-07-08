@@ -186,6 +186,14 @@ fully-qualified; otherwise they're root-relative (fine when the site is
 browsed as a whole). The hub also runs a **watchdog**: flags repos whose
 `VITALS.json` is > 3 days stale (usually the disabled-cron problem, §7).
 
+The aggregate dashboard charts four metrics per repo, both as a current-value
+bar (stars, views 30d, clones 30d, release downloads total) and as a
+trend-over-time line (stars, daily views, daily clones, release downloads) —
+all four sourced from fields `history.ndjson` already records per day (§5:
+`views`/`clones` are traffic-window fields, `popularity`/`releases` are
+point-in-time fields), so no new collection was needed to add clones/downloads
+alongside the original stars/views.
+
 ## 4. Metrics
 
 ### v1 (ship)
