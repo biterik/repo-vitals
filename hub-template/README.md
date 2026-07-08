@@ -10,15 +10,28 @@ tokens, no coordination with the repo owners.
 
 ## Set up your own hub (5 minutes)
 
-1. Copy the three files of this template into a new repository
-   (e.g. `your-name/repo-vitals-hub`):
-   `hub-config.yml`, `.github/workflows/hub.yml`, this `README.md`.
-2. Edit `hub-config.yml`: set a title and list the repositories to track.
+This repository is a **GitHub template** — click **Use this template** on
+its GitHub page to get your own independent copy (`your-name/repo-vitals-hub`
+or any name you like). It is completely separate from `repo-vitals` itself;
+you never need a copy of that repo's code to run a hub.
+
+1. **Use this template** → **Create a new repository**.
+2. Enable Pages, once: in your new repo, *Settings → Pages → Source:
+   "GitHub Actions"*.
+3. Edit `hub-config.yml`: set a title and list the repositories to track.
    Any repo with a `vitals` branch works — see the
-   [2-minute install](https://github.com/biterik/repo-vitals#install-instrument-a-repository-2-minutes)
-   for repos that don't have one yet.
-3. Enable Pages: *Settings → Pages → Source: "GitHub Actions"*.
-4. Run it once: *Actions → hub → Run workflow*.
+   [2-minute install](https://github.com/biterik/repo-vitals#part-1-track-one-repo-2-minutes)
+   for repos that don't have one yet. You can do this entirely in the
+   browser: open the file, click the pencil (✏️) icon, edit, **Commit
+   changes**.
+
+That's it — committing a change to `hub-config.yml` **automatically**
+rebuilds the site (the workflow triggers on any push that touches that
+file). No separate "run it" step needed. It also rebuilds on its own every
+day at 04:43 UTC, so it never goes stale even untouched. If you want the
+site updated immediately without changing the config, you can still trigger
+a rebuild by hand: *Actions → hub → Run workflow* — but that's an optional
+shortcut, never a required step.
 
 Your fleet is then live at:
 
@@ -38,9 +51,6 @@ Your fleet is then live at:
   report, kept under a name that always carries the fleet title and the
   date (e.g. `my-repo-fleet-2026-07-06.md`) — safe to download and file
   away without colliding with anyone else's `REPORT.md`.
-
-The site rebuilds daily (04:43 UTC), on every change to `hub-config.yml`,
-and on demand via *Run workflow*.
 
 ## The watchdog
 

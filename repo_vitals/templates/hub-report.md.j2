@@ -32,7 +32,7 @@ Repositories are flagged when their data is older than {{ stale_after_days }} da
 ## Per-repository reports
 
 {% for e in repos %}
-- **[{{ e.repo }}](https://github.com/{{ e.repo }})** — {% if e.status in ("ok", "stale") %}{% if e.dashboard_url %}[dashboard]({{ e.dashboard_url }}) · {% endif %}[daily report]({{ e.report_url }}) · [data branch](https://github.com/{{ e.repo }}/tree/vitals){% else %}not instrumented — add repo-vitals ([2-minute setup](https://github.com/biterik/repo-vitals#install-instrument-a-repository-2-minutes)){% endif %}
+- **[{{ e.repo }}](https://github.com/{{ e.repo }})** — {% if e.status in ("ok", "stale") %}{% if e.dashboard_url %}[dashboard]({{ e.dashboard_url }}) · {% endif %}[daily report]({{ e.report_url }}) · [data branch](https://github.com/{{ e.repo }}/tree/vitals){% else %}not instrumented — add repo-vitals ([2-minute setup](https://github.com/biterik/repo-vitals#part-1-track-one-repo-2-minutes)){% endif %}
 
 {% endfor %}
 

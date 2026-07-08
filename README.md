@@ -14,6 +14,34 @@ report, machine-readable data, live badges, and an interactive dashboard at
 stable URLs. **No server. No database. No external service. Your data stays
 in your repo, forever.**
 
+## Two separate things — read this first
+
+This confuses people, so it gets its own section before anything else:
+
+1. **The engine — this repo, `repo-vitals`.** You do **not** copy, clone, or
+   fork it to use it on your own project (there's exactly one exception,
+   [Part 2](#part-2-track-many-of-your-own-repos-at-once), and even that just
+   *borrows a script* from it — it still doesn't add its code to your repo).
+   You add one small file to a repo you own, that file points at
+   `biterik/repo-vitals@v1`, and GitHub runs it for you every day. Nothing
+   else to install.
+
+2. **A "hub" — a separate repository that you create.** If you want *one*
+   dashboard covering many repos — yours, a team's, a whole consortium's —
+   you make your own small hub repository from a public template. It has
+   its own name, you own it, and it is a **completely different repository
+   from `repo-vitals`**. You never need a copy of `repo-vitals`'s code to
+   create or run a hub. It just reads what other repos have already
+   published. See [Part 4](#part-4-the-hub-one-view-across-many-repos).
+
+If you only care about your own repo(s): go to
+[Part 1](#part-1-track-one-repo-2-minutes). If you're the person who has to
+report on repos *other people* own: skim Part 1 so you know what you're
+asking them to do, then jump to
+[Part 4](#part-4-the-hub-one-view-across-many-repos) — but every repo you
+want in the report still needs Part 1 (or [Part 2](#part-2-track-many-of-your-own-repos-at-once))
+done first, by whoever owns it.
+
 ## Why?
 
 **If you maintain open-source software**, GitHub's built-in insights can't
@@ -33,74 +61,10 @@ repo a daily, stable-URL `REPORT.md` and `VITALS.json` that anyone can
 download or script against, with zero coordination: no accounts, no
 dashboards behind logins, no asking maintainers for numbers. It was built
 for exactly this case in the [NFDI-MatWerk](https://nfdi-matwerk.de)
-consortium, and the upcoming **hub** (see below) aggregates a whole fleet
-into one dashboard and one grant-ready report.
+consortium, and the **hub** (Part 4) aggregates a whole fleet into one
+dashboard and one grant-ready report.
 
-Adoption is one ~15-line workflow file per repo — or one command for your
-entire account (see [fleet rollout](#instrument-many-repositories-at-once)).
-Your default branch is never touched, and if you ever stop using it, the
-archive remains: plain JSON and markdown in a git branch you own.
-
-## Quickstart: which of these is you?
-
-**1. You own one or more repos and want their stats.**
-One repo: the [2-minute install](#install-instrument-a-repository-2-minutes)
-below. Several/all of your repos: [fleet rollout](#instrument-many-repositories-at-once)
-with `deploy/rollout.sh`. Full detail, including **exactly how and when a
-workflow actually has to run**, is in those two sections — nothing appears
-automatically the instant you add a file; read that part carefully.
-
-**2. You want to look at your own repo's vitals.**
-See [Look at the status of a repository](#look-at-the-status-of-a-repository):
-the daily `REPORT.md` is a plain URL, no setup; the interactive dashboard
-needs GitHub Pages enabled, running it locally, or — if someone tracks your
-repo in their hub — it's already mirrored there for you, no setup needed.
-
-**3. You're an admin/PI reporting on repos other people own.**
-This is the [hub](#watch-a-whole-fleet-the-hub): repo owners install
-repo-vitals themselves (see 1.) and send you their GitHub username and repo
-names; you add those to *your own* hub, push, and run its workflow once.
-Full step-by-step — including exactly where the results end up — is in
-that section.
-
-**Does `git clone` download the vitals data?** Yes and no — the distinction
-matters. A plain `git clone https://github.com/<owner>/<repo>` fetches the
-*entire* repository, including every commit on the orphan `vitals` branch;
-that data is genuinely on your disk afterward and readable fully offline
-(`git show origin/vitals:REPORT.md` works with zero network access, once
-cloned). What it does **not** do is put those files in your working
-directory: `git clone` only checks out the *default* branch's tree, so
-`REPORT.md` won't appear alongside your other files unless you explicitly
-check out `vitals` — `git clone --branch vitals ... vitals-data`, `git
-worktree add`, or `git checkout vitals` in a scratch clone. That's exactly
-why every "view it locally" instruction in this README uses `git clone
---branch vitals`: that flag is what surfaces the files, not what fetches
-them — they were already fetched.
-
-## What you get
-
-Once a repository is instrumented, an orphan branch called `vitals` is
-updated every day with:
-
-| File | What it is | Stable URL |
-|---|---|---|
-| `REPORT.md` | Human-readable daily report: summary tables, trends, health score | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md` |
-| `VITALS.json` | The same data, machine-readable (JSON, schema-versioned) | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/VITALS.json` |
-| `index.html` | Interactive dashboard (charts, release-impact overlay) | serve via GitHub Pages, see below |
-| `history.ndjson` | Complete per-day history since instrumentation | `…/vitals/history.ndjson` |
-| `badge/*.json` | Live shields.io badge endpoints (stars, views/week, health) | `…/vitals/badge/stars.json` |
-| `snapshots/` | Immutable daily raw snapshots (audit trail) | `…/vitals/snapshots/2026-07-06.json` |
-| `reports/` | Dated, repo-qualified copy of that day's `REPORT.md` — safe to download standalone | `…/vitals/reports/<owner>-<repo>-2026-07-06.md` |
-
-`REPORT.md` is a **stable URL that always holds today's report** (for
-badges/scripting); `reports/<owner>-<repo>-<date>.md` is the same content
-under a name that survives being pulled out of context — download several
-repos' reports into one folder (e.g. for a grant renewal) and none of them
-collide or get confused for another day's.
-
-Your default branch is never touched — daily commits go only to `vitals`.
-
-## Install: instrument a repository (2 minutes)
+## Part 1: track one repo (2 minutes)
 
 **Step 1** — add one workflow file to your repo as
 `.github/workflows/repo-vitals.yml`:
@@ -145,16 +109,27 @@ Without the PAT everything still works — the traffic section is skipped and
 the report says so. Fine-grained PATs expire (max 1 year); when that happens
 the report shows a loud warning rather than failing silently.
 
-**Step 3** — don't wait for 03:17 UTC: run it once now via
+**Step 3 — you must do this once, nothing happens on its own yet.** Adding
+the file above does not create any data by itself: it only tells GitHub
+*when* to eventually run (daily, at 03:17 UTC). To get your first report
+right now instead of waiting up to 24 hours, trigger it manually:
 *Actions → repo-vitals → Run workflow* (or `gh workflow run repo-vitals`).
-The first run creates the `vitals` branch and backfills your full star
-history since the repo was created.
+That first run creates the `vitals` branch and backfills your full star
+history since the repo was created. After that, it's automatic, every day,
+forever.
 
-### Instrument many repositories at once
+Once it's run at least once, see [Part 3](#part-3-view-your-repos-vitals)
+to look at the result.
+
+## Part 2: track many of your own repos at once
+
+This is still just Part 1, done many times automatically — nothing to do
+with the hub in Part 4.
 
 `deploy/rollout.sh` is a script *inside the repo-vitals tool itself*
-(`github.com/biterik/repo-vitals`) — not something you add to your own
-project. Clone the tool, then run the script from inside that clone:
+(`github.com/biterik/repo-vitals`) — the one and only time you'll need a
+copy of that repo's code, and only for this script, not for anything it adds
+to your projects. Clone it, then run the script from inside that clone:
 
 ```sh
 git clone https://github.com/biterik/repo-vitals
@@ -187,9 +162,9 @@ branch) — an open, unmerged PR does nothing by itself. Either:
 (`--merge` above does this step automatically, for every repo where nothing
 — like a required review — blocks it.)
 
-Merging still doesn't create any data by itself — see
-[Step 3](#install-instrument-a-repository-2-minutes) above: trigger the
-workflow once (*Actions → repo-vitals → Run workflow*, or
+Merging still doesn't create any data by itself — same as
+[Part 1, Step 3](#part-1-track-one-repo-2-minutes): trigger the workflow
+once (*Actions → repo-vitals → Run workflow*, or
 `gh workflow run repo-vitals --repo <owner>/<repo>`), or wait for the daily
 03:17 UTC cron.
 
@@ -199,7 +174,7 @@ with a clear message if either is missing. Tested on macOS and Linux; on
 Windows there's no native cmd.exe/PowerShell support, so run it under
 **WSL** (identical to the Linux case) or **Git Bash**.
 
-## Look at the status of a repository
+## Part 3: view your repo's vitals
 
 **Daily report** — open the stable URL (bookmarkable, downloadable, no auth
 for public repos):
@@ -209,6 +184,10 @@ https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md
 ```
 
 or browse the `vitals` branch on GitHub, where `REPORT.md` renders nicely.
+A dated, standalone copy also lives at
+`.../vitals/reports/<owner>-<repo>-<date>.md` — safe to download without
+colliding with another repo's or another day's report (see
+[Reference](#reference-every-file-and-url-this-produces)).
 
 **Interactive dashboard** — the `vitals` branch carries a self-contained
 `index.html` (charts for traffic with release markers, stars/forks, release
@@ -222,6 +201,10 @@ downloads, activity). To view it:
   git clone --branch vitals https://github.com/<owner>/<repo> vitals-data
   python3 -m http.server -d vitals-data     # → http://localhost:8000
   ```
+- *Automatically*, with no setup at all, if someone tracks your repo in
+  their [hub](#part-4-the-hub-one-view-across-many-repos) — the hub mirrors
+  a live dashboard for every repo it tracks, whether or not that repo has
+  its own GitHub Pages.
 
 **Badges in your README** — live numbers served from the vitals branch:
 
@@ -235,39 +218,74 @@ downloads, activity). To view it:
 metrics; schema in [`schema/vitals.schema.json`](schema/vitals.schema.json))
 or `history.ndjson` (one JSON object per day).
 
-## Watch a whole fleet: the hub
+**Does `git clone` download this data?** Yes and no — the distinction
+matters. A plain `git clone https://github.com/<owner>/<repo>` fetches the
+*entire* repository, including every commit on the orphan `vitals` branch;
+that data is genuinely on your disk afterward and readable fully offline
+(`git show origin/vitals:REPORT.md` works with zero network access, once
+cloned). What it does **not** do is put those files in your working
+directory: `git clone` only checks out the *default* branch's tree, so
+`REPORT.md` won't appear alongside your other files unless you explicitly
+check out `vitals` — `git clone --branch vitals ... vitals-data` (used
+above), `git worktree add`, or `git checkout vitals` in a scratch clone.
+That flag is what surfaces the files, not what fetches them — they were
+already fetched.
 
-For consortia, PIs, and project managers: a small companion repository —
-*yours*, separate from `repo-vitals` — that pulls together everyone else's
-already-published vitals data into one dashboard and one report. Live
-example: <https://biterik.github.io/repo-vitals-hub/>.
+## Part 4: the hub — one view across many repos
 
-**Step 0 — set up your own hub (once).** If you don't already have one, copy
-the three files from [`hub-template/`](hub-template/) (or the
-[repo-vitals-hub template repo](https://github.com/biterik/repo-vitals-hub))
-into a brand new repository of your own, e.g. `your-name/repo-vitals-hub`,
-then enable *Settings → Pages → Source: "GitHub Actions"*. Full walkthrough:
-[hub-template/README.md](hub-template/README.md). This is a normal repo you
-own — clone it like any other.
+For consortia, PIs, and project managers: a small repository — *yours*,
+completely separate from `repo-vitals` — that pulls together everyone
+else's already-published vitals data into one dashboard and one report.
+**No part of this needs a copy of `repo-vitals`'s code.** Live example:
+<https://biterik.github.io/repo-vitals-hub/>.
 
-**Step 1 — collect what to track.** Each repo owner installs repo-vitals on
-their own repos first (see [above](#install-instrument-a-repository-2-minutes)
-— this is a separate, one-time step *they* do). They then tell you their
-GitHub username and which repo names to include — by email, chat, however
-you coordinate. repo-vitals has no way to discover this automatically: it
-tracks by owner + repo name, not by email address.
+### Step 0 — create your own hub (one click, one time)
 
-**Step 2 — add them to your hub.** Clone *your own* hub repo (not
-`repo-vitals`) and edit its config:
+Open [github.com/biterik/repo-vitals-hub](https://github.com/biterik/repo-vitals-hub) —
+notice it's marked **"Public template"**. Click the green **Use this
+template** button → **Create a new repository** → give it a name (e.g.
+`your-name/repo-vitals-hub`) → **Create repository**. You now own a brand
+new, independent repository containing exactly three things:
+`hub-config.yml`, `.github/workflows/hub.yml`, and a README. (If you'd
+rather build it from source instead of using the button, the same three
+files live in this repo's [`hub-template/`](hub-template/) — copy them into
+a new repository yourself. Same result.)
 
-```sh
-git clone https://github.com/<you>/<hub-repo>
-cd <hub-repo>
-```
+Then, once, in your new repo: *Settings → Pages → Source: "GitHub Actions"*.
 
-Add one line per repo under `repos:` in `hub-config.yml`:
+### Step 1 — find out what to track
+
+Every repo owner installs repo-vitals on their own repos first — that's
+[Part 1](#part-1-track-one-repo-2-minutes) or
+[Part 2](#part-2-track-many-of-your-own-repos-at-once), done by *them*, not
+by you. They then tell you their GitHub username and which repo names to
+include — by email, chat, however your team communicates. There's no way
+to discover this automatically: repo-vitals tracks by owner + repo name,
+never by email address, and doesn't scan anyone's account on its own.
+
+### Step 2 — tell your hub which repos to track
+
+Open `hub-config.yml` in your hub repo and add a line per repo under
+`repos:`. Two ways to do this — pick whichever you're comfortable with,
+both have the exact same effect:
+
+- **In the browser, no git needed:** click `hub-config.yml` → the pencil
+  (✏️) "edit" icon → add a line → scroll down → **Commit changes** (directly
+  to `main`).
+- **On the command line:**
+  ```sh
+  git clone https://github.com/<you>/<hub-repo>
+  cd <hub-repo>
+  # edit hub-config.yml in any text editor, then:
+  git add hub-config.yml
+  git commit -m "add a repo to track"
+  git push
+  ```
+
+Either way, `hub-config.yml` ends up looking like this:
 
 ```yaml
+title: "My repo fleet"
 repos:
   - biterik/openbis-mcp-server
   - biterik/LAMMPS-compile-n-bench
@@ -276,30 +294,25 @@ repos:
 
 The only requirement: each listed repo must **already** have repo-vitals
 installed **and have completed at least one run** — a `vitals` branch must
-exist. The hub only ever reads; it never installs anything anywhere. A repo
-without a `vitals` branch shows up flagged **"missing"**, it isn't silently
-dropped.
+exist (Part 1/2, done by its owner). The hub only ever *reads*; it never
+installs anything anywhere, on any repo. A repo without a `vitals` branch
+shows up flagged **"missing"** in your hub — it isn't silently dropped.
 
-**Step 3 — push it:**
+### Step 3 — that's it, no extra step to "run" anything
 
-```sh
-git add hub-config.yml
-git commit -m "add X's repos"
-git push
-```
+The instant you commit a change to `hub-config.yml` — browser or command
+line, doesn't matter — it **automatically rebuilds the site**, no manual
+button needed. (It also rebuilds every day on its own at 04:43 UTC, so it
+never goes stale even if you forget about it.) Give it a minute or two,
+then check the results below. If you're impatient or want to force a
+rebuild without changing the config, you *can* trigger it by hand: your hub
+repo → **Actions** tab → **hub** → **Run workflow** — but for the normal
+case of adding or removing a repo, you never need to.
 
-**Step 4 — run it.** Pushing alone does not rebuild the site. Either wait
-for the hub's own daily cron (04:43 UTC), or trigger it now:
+### Where you see the results
 
-- command line: `gh workflow run hub --repo <you>/<hub-repo>`
-- browser: your hub repo → **Actions** tab → **hub** in the left sidebar →
-  **Run workflow** button → **Run workflow** (green) in the dropdown.
-
-It rebuilds automatically every day after that; repeat steps 2–3 whenever
-the repo list changes.
-
-**Where the admin sees the results**, once that run finishes (GitHub Pages
-redeploys automatically, usually within a minute):
+Once a build finishes (GitHub Pages redeploys automatically, usually within
+a minute):
 
 | What | Where |
 |---|---|
@@ -310,9 +323,34 @@ redeploys automatically, usually within a minute):
 | Each repo's own daily report | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md` |
 | Raw data behind the dashboard | `https://<you>.github.io/<hub-repo>/hub-data.json` |
 
-A **watchdog** flags in all of the above whenever a tracked repo's data has
-gone stale (expired token, disabled cron) or was never instrumented, so
-silent failures get noticed instead of just quietly missing.
+A **watchdog** flags, in all of the above, any tracked repo whose data has
+gone stale (expired token, disabled cron) or that was never instrumented —
+so silent failures get noticed instead of quietly going missing. Private
+repos aren't included by default (the hub reads public URLs only) — see
+[`hub-template/README.md`](hub-template/README.md) for the token-based
+option.
+
+## Reference: every file and URL this produces
+
+Once a repository is instrumented (Part 1/2), an orphan branch called
+`vitals` is updated every day with:
+
+| File | What it is | Stable URL |
+|---|---|---|
+| `REPORT.md` | Human-readable daily report: summary tables, trends, health score | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md` |
+| `VITALS.json` | The same data, machine-readable (JSON, schema-versioned) | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/VITALS.json` |
+| `index.html` | Interactive dashboard (charts, release-impact overlay) | serve via GitHub Pages, see [Part 3](#part-3-view-your-repos-vitals) |
+| `history.ndjson` | Complete per-day history since instrumentation | `…/vitals/history.ndjson` |
+| `badge/*.json` | Live shields.io badge endpoints (stars, views/week, health) | `…/vitals/badge/stars.json` |
+| `snapshots/` | Immutable daily raw snapshots (audit trail) | `…/vitals/snapshots/2026-07-06.json` |
+| `reports/` | Dated, repo-qualified copy of that day's `REPORT.md` — safe to download standalone | `…/vitals/reports/<owner>-<repo>-2026-07-06.md` |
+
+`REPORT.md` is a **stable URL that always holds today's report** (for
+badges/scripting); `reports/<owner>-<repo>-<date>.md` is the same content
+under a name that survives being pulled out of context — download several
+repos' reports into one folder (e.g. for a grant renewal) and none of them
+collide or get confused for another day's. Your default branch is never
+touched — daily commits go only to `vitals`.
 
 ## Generate reports yourself (no Action needed)
 
@@ -363,12 +401,13 @@ format, or decades later.
 - Full design: [ARCHITECTURE.md](ARCHITECTURE.md). Milestone status:
   M1–M6 done (collector/merge, action, reports/badges, dashboard, rollout,
   hub); M7 (Zenodo DOI citations/downloads for research software) upcoming.
+- Release history: [CHANGELOG.md](CHANGELOG.md). Current release: **v1.3.0**.
 
 ## Local development
 
 ```sh
 pip install -e ".[dev]"
-pytest                # 50 tests incl. the traffic-window merge suite
+pytest                # tests incl. the traffic-window merge suite
 ruff check .
 python tests/make_dashboard_fixture.py /tmp/demo   # synthetic dashboard data
 ```
@@ -378,7 +417,7 @@ python tests/make_dashboard_fixture.py /tmp/demo   # synthetic dashboard data
 If you use repo-vitals in your work, please cite it — GitHub's
 *"Cite this repository"* button uses [`CITATION.cff`](CITATION.cff):
 
-> Bitzek, E. (2026). *repo-vitals* (Version 1.0.0) [Computer software].
+> Bitzek, E. (2026). *repo-vitals* (Version 1.3.0) [Computer software].
 > https://github.com/biterik/repo-vitals
 
 ## Funding

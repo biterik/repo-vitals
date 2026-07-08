@@ -4,4 +4,4 @@
 # Dr.-Mack-Straße 77, 90762 Fürth, Germany
 """repo-vitals: long-term GitHub repository statistics."""
 
-__version__ = "0.1.0"
+__version__ = "1.3.0"

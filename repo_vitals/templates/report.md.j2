@@ -13,7 +13,7 @@ _Updated {{ snapshot.collected_at }} (UTC) · machine-readable: [VITALS.json](VI
 {% if traffic_failing %}
 > **⚠️ Traffic collection is failing{% if last_traffic_day %} — last traffic data: {{ last_traffic_day }}{% endif %}.**
 > Most likely the `REPO_VITALS_TOKEN` PAT is missing or expired (fine-grained PATs
-> expire after at most one year). See the [setup notes](https://github.com/biterik/repo-vitals#quickstart-target-ux).
+> expire after at most one year). See [setup notes](https://github.com/biterik/repo-vitals#part-1-track-one-repo-2-minutes).
 {% endif %}
 
 ## Summary
@@ -109,4 +109,4 @@ A copy of this report named with the repo and today's date lives at
 
 <sub>[repo-vitals](https://github.com/biterik/repo-vitals) by Erik Bitzek —
 turns any GitHub repo into a permanent analytics archive. Track your own:
-[2-minute install](https://github.com/biterik/repo-vitals#install-instrument-a-repository-2-minutes).</sub>
+[2-minute install](https://github.com/biterik/repo-vitals#part-1-track-one-repo-2-minutes).</sub>

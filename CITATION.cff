@@ -24,8 +24,8 @@ abstract: >-
 license: BSD-3-Clause
 repository-code: "https://github.com/biterik/repo-vitals"
 url: "https://github.com/biterik/repo-vitals"
-version: 1.0.0
-date-released: "2026-07-06"
+version: 1.3.0
+date-released: "2026-07-08"
 keywords:
   - github
   - repository-metrics
