@@ -1,7 +1,7 @@
 # biterik/repo-vitals — repo vitals
 
 ![stars](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fstars.json) ![views/week](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fviews-week.json) ![health](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fhealth.json) 
-_Updated 2026-07-08T06:08:24Z (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson) · daily snapshots: [snapshots/](snapshots/)_
+_Updated 2026-07-08T14:11:04Z (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson) · daily snapshots: [snapshots/](snapshots/)_
 
 
 ## Summary
@@ -16,7 +16,7 @@ _Updated 2026-07-08T06:08:24Z (UTC) · machine-readable: [VITALS.json](VITALS.js
 
 ¹ sum of daily unique counts — an upper bound on true period uniques.
 
-**Health: 57/100** (heuristic² — traffic trend 100, activity 52, community 8, release adoption 0)
+**Health: 61/100** (heuristic² — traffic trend 100, activity 64, community 8, release adoption 0)
 
 ## Trends — last 30 days
 
@@ -49,7 +49,7 @@ No releases.
 
 ## Activity (last 30 days)
 
-13 commits · 0 PRs opened / 0 merged · 0 issues opened / 0 closed · 1 contributors total
+16 commits · 0 PRs opened / 0 merged · 0 issues opened / 0 closed · 1 contributors total
 
 
 ---

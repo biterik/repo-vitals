@@ -1,13 +1,13 @@
 {
   "activity": {
-    "commits_30d": 13,
+    "commits_30d": 16,
     "contributors_total": 1,
     "issues_closed_30d": 0,
     "issues_opened_30d": 0,
     "prs_merged_30d": 0,
     "prs_opened_30d": 0
   },
-  "collected_at": "2026-07-08T06:08:24Z",
+  "collected_at": "2026-07-08T14:11:04Z",
   "date": "2026-07-08",
   "derived": {
     "clones_last_30d": 132,
@@ -22,13 +22,13 @@
     },
     "health": {
       "components": {
-        "activity": 52,
+        "activity": 64,
         "community": 8,
         "release_adoption": 0,
         "traffic_trend": 100
       },
       "note": "heuristic composite \u2014 weights fixed in v1, configurable later",
-      "score": 57,
+      "score": 61,
       "weights": {
         "activity": 0.3,
         "community": 0.2,
@@ -80,8 +80,8 @@
     "default_branch": "main",
     "fork": false,
     "open_issues": 0,
-    "pushed_at": "2026-07-07T06:57:24Z",
-    "size_kb": 150
+    "pushed_at": "2026-07-08T14:08:17Z",
+    "size_kb": 152
   },
   "popularity": {
     "forks": 0,
