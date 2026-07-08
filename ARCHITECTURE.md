@@ -239,6 +239,11 @@ repos/<owner>-<repo>/          # per-repo dashboard mirror (§3.4(b)):
   index.html                     same index.html, fetches the files below
   VITALS.json                    verbatim copy fetched from that repo
   history.ndjson                 verbatim copy fetched from that repo
+  REPORT.md                      verbatim copy — the template's own relative
+                                  links to REPORT.md must resolve here too,
+                                  not just on the repo's real vitals branch
+                                  (best-effort: mirroring still proceeds
+                                  without it if this one fetch fails)
 ```
 
 Snapshot (abridged):

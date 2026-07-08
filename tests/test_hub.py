@@ -53,12 +53,15 @@ def vitals_payload(repo, collected_at, stars=10, views=100):
     }
 
 
-def routes_for(repo, payload, history_lines=""):
+def routes_for(repo, payload, history_lines="", report_md=None):
     base = f"https://raw.githubusercontent.com/{repo}/vitals"
-    return {
+    routes = {
         f"{base}/VITALS.json": FakeResponse(200, payload),
         f"{base}/history.ndjson": FakeResponse(200, text=history_lines),
     }
+    if report_md is not None:
+        routes[f"{base}/REPORT.md"] = FakeResponse(200, text=report_md)
+    return routes
 
 
 # ---------------------------------------------------------------- config
@@ -198,16 +201,19 @@ def test_build_hub_mirrors_per_repo_dashboards(tmp_path):
     history = json.dumps({"date": "2026-07-05", "views": {"count": 3, "uniques": 1},
                           "popularity": {"stars": 8}})
     routes = routes_for(fresh, vitals_payload(fresh, "2026-07-06T03:17:00Z"),
-                        history_lines=history)
+                        history_lines=history, report_md="# biterik/fresh — repo vitals\n")
     session = FakeSession(routes)
 
     summary = build_hub(hub_config([fresh, bare]), tmp_path, session=session, now=NOW)
 
     fresh_entry = next(e for e in summary["repos"] if e["repo"] == fresh)
     assert fresh_entry["dashboard_url"] == "repos/biterik-fresh/index.html"
-    assert "_vitals_text" not in fresh_entry and "_history_text" not in fresh_entry
+    assert all(k not in fresh_entry for k in ("_vitals_text", "_history_text", "_report_text"))
 
     mirror = tmp_path / "repos" / "biterik-fresh"
+    # the dashboard's own relative REPORT.md/VITALS.json links must resolve
+    # inside the mirror too, not just the dashboard itself
+    assert (mirror / "REPORT.md").read_text() == "# biterik/fresh — repo vitals\n"
     mirrored_dashboard = (mirror / "index.html").read_text()
     assert 'fetch("VITALS.json")' in mirrored_dashboard  # the per-repo dashboard template,
     assert "hub-data.json" not in mirrored_dashboard     # not the hub's own aggregate one
@@ -217,6 +223,19 @@ def test_build_hub_mirrors_per_repo_dashboards(tmp_path):
     # a repo with no vitals branch gets no dashboard mirror
     bare_entry = next(e for e in summary["repos"] if e["repo"] == bare)
     assert bare_entry["dashboard_url"] is None
+
+
+def test_build_hub_mirror_survives_missing_report_md(tmp_path):
+    """REPORT.md fetch failing (e.g. the repo predates this feature, or a
+    transient error) must not block the dashboard mirror itself."""
+    repo = "biterik/fresh"
+    routes = routes_for(repo, vitals_payload(repo, "2026-07-06T03:17:00Z"))  # no report_md
+    summary = build_hub(hub_config([repo]), tmp_path, session=FakeSession(routes), now=NOW)
+
+    assert summary["repos"][0]["dashboard_url"] == "repos/biterik-fresh/index.html"
+    mirror = tmp_path / "repos" / "biterik-fresh"
+    assert (mirror / "index.html").exists() and (mirror / "VITALS.json").exists()
+    assert not (mirror / "REPORT.md").exists()
     assert not (tmp_path / "repos" / "biterik-bare").exists()
 
     # the report links to it, and mentions it's a real dashboard, not markup

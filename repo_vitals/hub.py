@@ -110,6 +110,7 @@ def fetch_repo_status(session, repo, branch="vitals", stale_after_days=DEFAULT_S
         # serialized (hub-data.json, REPORT.md).
         "_vitals_text": None,
         "_history_text": None,
+        "_report_text": None,
     }
     try:
         resp = session.get(f"{base}/VITALS.json", timeout=30)
@@ -154,7 +155,17 @@ def fetch_repo_status(session, repo, branch="vitals", stale_after_days=DEFAULT_S
 
     entry["_vitals_text"] = resp.text
     entry["series"], entry["_history_text"] = _fetch_series(session, base, now)
+    entry["_report_text"] = _fetch_text(session, entry["report_url"])
     return entry
+
+
+def _fetch_text(session, url):
+    """Best-effort GET of a text file; None on any failure (non-fatal)."""
+    try:
+        resp = session.get(url, timeout=30)
+        return resp.text if resp.status_code == 200 else None
+    except requests.RequestException:
+        return None
 
 
 def _fetch_series(session, base, now):
@@ -211,12 +222,19 @@ def build_hub(config: dict, out_dir: str | Path, session=None, now=None) -> dict
     for e in entries:
         vitals_text = e.pop("_vitals_text", None)
         history_text = e.pop("_history_text", None)
+        report_text = e.pop("_report_text", None)
         if e["status"] in ("ok", "stale") and vitals_text and history_text is not None:
             slug = slugify(e["repo"])
             repo_dir = out / "repos" / slug
             repo_dir.mkdir(parents=True, exist_ok=True)
             (repo_dir / "VITALS.json").write_text(vitals_text, encoding="utf-8")
             (repo_dir / "history.ndjson").write_text(history_text, encoding="utf-8")
+            # The dashboard template links to REPORT.md/VITALS.json as
+            # relative paths in its own directory (true on the repo's own
+            # vitals branch) — mirror REPORT.md too so those links resolve
+            # here as well, instead of 404ing inside the mirrored copy.
+            if report_text is not None:
+                (repo_dir / "REPORT.md").write_text(report_text, encoding="utf-8")
             if dashboard_asset is None:
                 dashboard_asset = render_dashboard_asset("index.html")
             (repo_dir / "index.html").write_text(dashboard_asset, encoding="utf-8")
