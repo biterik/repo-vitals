@@ -45,53 +45,23 @@ archive remains: plain JSON and markdown in a git branch you own.
 
 **1. You own one or more repos and want their stats.**
 One repo: the [2-minute install](#install-instrument-a-repository-2-minutes)
-below. Several/all of your repos: `deploy/rollout.sh` from a
-[clone of this repo](#instrument-many-repositories-at-once) — it opens a PR
-per repo rather than pushing directly.
-
-A workflow run is required before any data exists, and it only happens once
-both of these are true: the workflow file is on the repo's **default
-branch** (for `rollout.sh`, that means the PR must be **merged** first — an
-open, unmerged PR does nothing), and either the daily cron fires (03:17 UTC)
-or you trigger it yourself: *Actions → repo-vitals → Run workflow*, or
-`gh workflow run repo-vitals --repo <owner>/<repo>`. Do the manual trigger
-the first time, or you're waiting up to 24h for anything to show up. After
-that first run it's automatic daily (the action re-enables its own cron if
-GitHub auto-disables it after 60 days of repo inactivity).
+below. Several/all of your repos: [fleet rollout](#instrument-many-repositories-at-once)
+with `deploy/rollout.sh`. Full detail, including **exactly how and when a
+workflow actually has to run**, is in those two sections — nothing appears
+automatically the instant you add a file; read that part carefully.
 
 **2. You want to look at your own repo's vitals.**
-Full detail in [Look at the status of a repository](#look-at-the-status-of-a-repository)
-below; short version: the daily `REPORT.md` is a plain URL, no auth, no
-setup. The interactive dashboard needs either GitHub Pages enabled on the
-`vitals` branch, running it locally, or — if the repo is tracked in someone's
-hub (see next) — it's already mirrored there for you, no setup on your side
-at all.
+See [Look at the status of a repository](#look-at-the-status-of-a-repository):
+the daily `REPORT.md` is a plain URL, no setup; the interactive dashboard
+needs GitHub Pages enabled, running it locally, or — if someone tracks your
+repo in their hub — it's already mirrored there for you, no setup needed.
 
-**3. You're an admin/PI and want one view across repos you don't
-necessarily maintain yourself.**
-This is the [hub](#watch-a-whole-fleet-the-hub): a separate small repo that
-only *reads* each tracked repo's public data, never writes to it.
-
-- *Building the list* — repo-vitals tracks by **owner + repo name**, not by
-  email: GitHub has no "find repos by email address" lookup. If you know
-  someone's GitHub username, `gh repo list <username-or-org> --json
-  nameWithOwner -q '.[].nameWithOwner'` lists everything they own (the same
-  command `rollout.sh` uses internally) — repeat per owner/org and combine
-  the lists for a multi-owner consortium.
-- *Prerequisite* — every repo you list must **already** have repo-vitals
-  installed **and have completed at least one run** (i.e. have a `vitals`
-  branch). The hub never installs anything anywhere; a repo without a
-  `vitals` branch shows up flagged "missing" in the hub, it isn't silently
-  skipped.
-- *Pulling it in* — add each `owner/repo` under `repos:` in the hub's
-  `hub-config.yml` and push. **That alone does not rebuild the site** — same
-  rule as above: wait for the hub's own daily cron (04:43 UTC), or trigger it
-  yourself: *Actions → hub → Run workflow*, or `gh workflow run hub --repo
-  <you>/<hub-repo>`.
-- Once it runs, you get: one aggregate dashboard, an interactive dashboard
-  mirrored *per repo* (so nobody needs GitHub Pages enabled on their own
-  repo), a combined `REPORT.md` (the grant-report artifact) alongside each
-  repo's own daily report, and a watchdog for anything gone stale.
+**3. You're an admin/PI reporting on repos other people own.**
+This is the [hub](#watch-a-whole-fleet-the-hub): repo owners install
+repo-vitals themselves (see 1.) and send you their GitHub username and repo
+names; you add those to *your own* hub, push, and run its workflow once.
+Full step-by-step — including exactly where the results end up — is in
+that section.
 
 **Does `git clone` download the vitals data?** Yes and no — the distinction
 matters. A plain `git clone https://github.com/<owner>/<repo>` fetches the
@@ -182,21 +152,46 @@ history since the repo was created.
 
 ### Instrument many repositories at once
 
-`deploy/rollout.sh` (from a clone of this repo) opens a PR against every one
-of your repos — reviewable, never a direct push, safe to re-run (instrumented
-repos are skipped):
+`deploy/rollout.sh` is a script *inside the repo-vitals tool itself*
+(`github.com/biterik/repo-vitals`) — not something you add to your own
+project. Clone the tool, then run the script from inside that clone:
 
 ```sh
+git clone https://github.com/biterik/repo-vitals
+cd repo-vitals
 deploy/rollout.sh --dry-run                  # show the plan for all your repos
 deploy/rollout.sh --repos projA,projB        # only these repos
 deploy/rollout.sh --exclude big-mono-repo    # everything except
 deploy/rollout.sh --merge                    # auto-merge PRs where allowed
 ```
 
-It also sets the `REPO_VITALS_TOKEN` secret on each repo. The PAT is taken
-from `--token`, `$REPO_VITALS_TOKEN`, or — if defined — a `repo-vitals-token`
-shell function (e.g. a macOS keychain lookup). With `--no-secret` the rollout
-proceeds without traffic collection.
+`projA`, `projB` above are **GitHub repository names** (e.g. `mc-driver`),
+*not* local folders — the script only talks to the GitHub API and never
+needs your other projects checked out anywhere on disk.
+
+It opens one PR per repo — reviewable, never a direct push, safe to re-run
+(already-instrumented repos are skipped) — and sets the `REPO_VITALS_TOKEN`
+secret on each. The PAT is taken from `--token`, `$REPO_VITALS_TOKEN`, or —
+if defined — a `repo-vitals-token` shell function (e.g. a macOS keychain
+lookup). With `--no-secret` the rollout proceeds without traffic collection.
+
+**Merging the PR.** Nothing runs until the PR is merged into that repo's
+default branch (GitHub only fires scheduled workflows from the default
+branch) — an open, unmerged PR does nothing by itself. Either:
+
+- command line: `gh pr merge add-repo-vitals --repo <owner>/<repo> --squash`
+- browser: open `https://github.com/<owner>/<repo>/pulls`, open the PR
+  titled "Add repo-vitals daily stats", click the green **Merge pull
+  request** button, confirm.
+
+(`--merge` above does this step automatically, for every repo where nothing
+— like a required review — blocks it.)
+
+Merging still doesn't create any data by itself — see
+[Step 3](#install-instrument-a-repository-2-minutes) above: trigger the
+workflow once (*Actions → repo-vitals → Run workflow*, or
+`gh workflow run repo-vitals --repo <owner>/<repo>`), or wait for the daily
+03:17 UTC cron.
 
 `rollout.sh` needs bash and the [GitHub CLI](https://cli.github.com)
 (`gh`, authenticated via `gh auth login`) — it checks for both and fails
@@ -242,42 +237,82 @@ or `history.ndjson` (one JSON object per day).
 
 ## Watch a whole fleet: the hub
 
-For consortia and project managers, a companion **hub** repository — three
-files, [set up in 5 minutes](hub-template/README.md) from
-[`hub-template/`](hub-template/) or the
-[repo-vitals-hub template repo](https://github.com/biterik/repo-vitals-hub) —
-tracks any number of instrumented repos. **Live example:
-<https://biterik.github.io/repo-vitals-hub/>.**
+For consortia, PIs, and project managers: a small companion repository —
+*yours*, separate from `repo-vitals` — that pulls together everyone else's
+already-published vitals data into one dashboard and one report. Live
+example: <https://biterik.github.io/repo-vitals-hub/>.
+
+**Step 0 — set up your own hub (once).** If you don't already have one, copy
+the three files from [`hub-template/`](hub-template/) (or the
+[repo-vitals-hub template repo](https://github.com/biterik/repo-vitals-hub))
+into a brand new repository of your own, e.g. `your-name/repo-vitals-hub`,
+then enable *Settings → Pages → Source: "GitHub Actions"*. Full walkthrough:
+[hub-template/README.md](hub-template/README.md). This is a normal repo you
+own — clone it like any other.
+
+**Step 1 — collect what to track.** Each repo owner installs repo-vitals on
+their own repos first (see [above](#install-instrument-a-repository-2-minutes)
+— this is a separate, one-time step *they* do). They then tell you their
+GitHub username and which repo names to include — by email, chat, however
+you coordinate. repo-vitals has no way to discover this automatically: it
+tracks by owner + repo name, not by email address.
+
+**Step 2 — add them to your hub.** Clone *your own* hub repo (not
+`repo-vitals`) and edit its config:
+
+```sh
+git clone https://github.com/<you>/<hub-repo>
+cd <hub-repo>
+```
+
+Add one line per repo under `repos:` in `hub-config.yml`:
 
 ```yaml
-# hub config: just a list — including repos you don't own
 repos:
   - biterik/openbis-mcp-server
   - biterik/LAMMPS-compile-n-bench
-  - nfdi-matwerk/some-repo
+  - nfdi-matwerk/some-repo        # any repo with a vitals branch, even ones you don't own
 ```
 
-A daily cron fetches each repo's published `VITALS.json` (public raw URLs —
-**read-only, no permissions, no coordination with the repo owners**) and
-builds:
+The only requirement: each listed repo must **already** have repo-vitals
+installed **and have completed at least one run** — a `vitals` branch must
+exist. The hub only ever reads; it never installs anything anywhere. A repo
+without a `vitals` branch shows up flagged **"missing"**, it isn't silently
+dropped.
 
-- an **aggregate dashboard** on GitHub Pages: the whole portfolio at a glance,
-- a **live dashboard mirrored per repo**, at `repos/<owner>-<repo>/` on the
-  hub's own site — clicking a repo from the fleet table or the report opens
-  an interactive chart, not a raw markdown file, even if that repo never set
-  up its own GitHub Pages,
-- a **combined REPORT.md** — the document you attach to a funder report
-  (`https://<you>.github.io/<hub>/REPORT.md`), plus a dated copy under
-  `reports/` for filing away without collisions,
-- a **watchdog** that flags repos whose data has gone stale (expired token,
-  disabled cron) or that aren't instrumented yet, so silent failures get
-  noticed.
+**Step 3 — push it:**
 
-That means anyone with a list of NFDI-MatWerk repositories can stand up
-their own fleet report, self-service. The only prerequisite: each tracked
-repo has repo-vitals installed (its `vitals` branch must exist) — which is
-what the [2-minute install](#install-instrument-a-repository-2-minutes) and
-[fleet rollout](#instrument-many-repositories-at-once) are for.
+```sh
+git add hub-config.yml
+git commit -m "add X's repos"
+git push
+```
+
+**Step 4 — run it.** Pushing alone does not rebuild the site. Either wait
+for the hub's own daily cron (04:43 UTC), or trigger it now:
+
+- command line: `gh workflow run hub --repo <you>/<hub-repo>`
+- browser: your hub repo → **Actions** tab → **hub** in the left sidebar →
+  **Run workflow** button → **Run workflow** (green) in the dropdown.
+
+It rebuilds automatically every day after that; repeat steps 2–3 whenever
+the repo list changes.
+
+**Where the admin sees the results**, once that run finishes (GitHub Pages
+redeploys automatically, usually within a minute):
+
+| What | Where |
+|---|---|
+| Aggregate dashboard (whole portfolio) | `https://<you>.github.io/<hub-repo>/` |
+| Combined report (the funder/grant document) | `https://<you>.github.io/<hub-repo>/REPORT.md` |
+| Dated archive of that report | `https://<you>.github.io/<hub-repo>/reports/` |
+| Each repo's own interactive dashboard, mirrored | `https://<you>.github.io/<hub-repo>/repos/<owner>-<repo>/` |
+| Each repo's own daily report | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md` |
+| Raw data behind the dashboard | `https://<you>.github.io/<hub-repo>/hub-data.json` |
+
+A **watchdog** flags in all of the above whenever a tracked repo's data has
+gone stale (expired token, disabled cron) or was never instrumented, so
+silent failures get noticed instead of just quietly missing.
 
 ## Generate reports yourself (no Action needed)
 
