@@ -16,6 +16,11 @@
 # via the `repo-vitals-token` zsh function (absent on e.g. the travel laptop —
 # then pass the token explicitly or use --no-secret).
 #
+# Requires: bash + the GitHub CLI (`gh`, authenticated via `gh auth login`).
+# Tested on macOS and Linux; on Windows there is no native cmd.exe/PowerShell
+# support — run it under WSL (recommended, identical to the Linux case) or
+# Git Bash.
+#
 # Usage:
 #   deploy/rollout.sh [--owner biterik] [--repos a,b,c] [--exclude x,y]
 #                     [--merge] [--dry-run] [--token PAT] [--no-secret]
@@ -33,7 +38,7 @@ BRANCH="add-repo-vitals"
 WORKFLOW_PATH=".github/workflows/repo-vitals.yml"
 TEMPLATE="$(dirname "$0")/workflow-template.yml"
 
-usage() { sed -n '2,22p' "$0"; exit "${1:-0}"; }
+usage() { sed -n '2,26p' "$0"; exit "${1:-0}"; }
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -50,6 +55,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -f "$TEMPLATE" ]] || { echo "error: $TEMPLATE not found" >&2; exit 1; }
+
+# --- preflight ---------------------------------------------------------------
+command -v gh >/dev/null 2>&1 || {
+  cat >&2 <<'EOF'
+error: the GitHub CLI ('gh') is required but was not found on $PATH.
+  macOS:   brew install gh
+  Linux:   https://github.com/cli/cli#installation
+  Windows: no native support — run this script under WSL (recommended) or
+           Git Bash, then install gh there.
+EOF
+  exit 1
+}
+gh auth status >/dev/null 2>&1 || {
+  echo "error: 'gh' is installed but not authenticated — run 'gh auth login' first." >&2
+  exit 1
+}
 
 # --- traffic PAT (keychain fallback) ---------------------------------------
 if [[ $NO_SECRET -eq 0 && $DRY_RUN -eq 0 && -z "$TOKEN" ]]; then

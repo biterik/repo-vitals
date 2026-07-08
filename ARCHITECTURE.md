@@ -353,7 +353,12 @@ consumer repos auto-receive fixes without PRs.
 
 ## 9. Fleet deployment ("all my repos") — yes, doable
 
-`deploy/rollout.sh` (uses `gh` CLI, runs on Erik's Mac — no cluster involved):
+`deploy/rollout.sh` (uses `gh` CLI, runs on Erik's Mac — no cluster involved).
+Portability: a bash script, needs `gh` on `$PATH` (both checked upfront with
+a clear error). Tested on macOS and Linux; on Windows there's no native
+cmd.exe/PowerShell support — WSL (identical to Linux) or Git Bash is
+required. The macOS-keychain traffic-token fallback (`repo-vitals-token` zsh
+function) is optional and degrades to `--token`/`--no-secret` elsewhere.
 
 ```
 gh repo list biterik --no-archived --json name,defaultBranchRef

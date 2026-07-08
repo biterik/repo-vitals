@@ -132,6 +132,12 @@ from `--token`, `$REPO_VITALS_TOKEN`, or — if defined — a `repo-vitals-token
 shell function (e.g. a macOS keychain lookup). With `--no-secret` the rollout
 proceeds without traffic collection.
 
+`rollout.sh` needs bash and the [GitHub CLI](https://cli.github.com)
+(`gh`, authenticated via `gh auth login`) — it checks for both and fails
+with a clear message if either is missing. Tested on macOS and Linux; on
+Windows there's no native cmd.exe/PowerShell support, so run it under
+**WSL** (identical to the Linux case) or **Git Bash**.
+
 ## Look at the status of a repository
 
 **Daily report** — open the stable URL (bookmarkable, downloadable, no auth
