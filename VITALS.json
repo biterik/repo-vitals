@@ -1,42 +1,35 @@
 {
   "activity": {
-    "commits_30d": 21,
+    "commits_30d": 22,
     "contributors_total": 1,
     "issues_closed_30d": 0,
     "issues_opened_30d": 0,
     "prs_merged_30d": 0,
     "prs_opened_30d": 0
   },
-  "collected_at": "2026-08-04T06:06:02Z",
+  "collected_at": "2026-08-04T20:56:09Z",
   "date": "2026-08-04",
   "derived": {
-    "clones_last_30d": 481,
-    "clones_last_7d": 31,
+    "clones_last_30d": 509,
+    "clones_last_7d": 59,
     "downloads_gained_30d": 0,
     "downloads_total": 0,
     "funnel_30d": {
       "downloads_gained": 0,
       "stars_gained": 0,
-      "unique_cloners": 224,
+      "unique_cloners": 237,
       "unique_visitors": 4
     },
-    "health": {
-      "components": {
-        "activity": 84,
-        "community": 8,
-        "release_adoption": 10,
-        "traffic_trend": 0
-      },
-      "note": "heuristic composite \u2014 weights fixed in v1, configurable later",
-      "score": 28,
-      "weights": {
-        "activity": 0.3,
-        "community": 0.2,
-        "release_adoption": 0.1,
-        "traffic_trend": 0.4
-      }
-    },
     "history_days": 43,
+    "per_30d": {
+      "clones": 355.1,
+      "downloads_gained": 0.0,
+      "stars_gained": 0.0,
+      "unique_cloners": 165.3,
+      "unique_visitors": 2.8,
+      "views": 13.3
+    },
+    "repo_created_at": "2026-07-06T13:31:29Z",
     "star_forecast": {
       "eta_exponential": null,
       "eta_linear": null,
@@ -46,26 +39,36 @@
     "stars_gained_30d": 0,
     "stars_gained_7d": 0,
     "stars_now": 0,
+    "totals": {
+      "clones": 509,
+      "downloads_gained": 0,
+      "stars_gained": 0,
+      "unique_cloners": 237,
+      "unique_visitors": 4,
+      "views": 19
+    },
+    "tracking_days": 43,
+    "tracking_since": "2026-06-23",
     "views_last_30d": 19,
     "views_last_7d": 0,
     "views_prev_7d": 0,
     "windows": {
       "30d": {
-        "clones": 481,
+        "clones": 509,
         "downloads_gained": 0,
         "stars_gained": 0,
         "unique_visitors": 4,
         "views": 19
       },
       "365d": {
-        "clones": 481,
+        "clones": 509,
         "downloads_gained": 0,
         "stars_gained": 0,
         "unique_visitors": 4,
         "views": 19
       },
       "90d": {
-        "clones": 481,
+        "clones": 509,
         "downloads_gained": 0,
         "stars_gained": 0,
         "unique_visitors": 4,
@@ -80,8 +83,8 @@
     "default_branch": "main",
     "fork": false,
     "open_issues": 0,
-    "pushed_at": "2026-08-03T06:38:36Z",
-    "size_kb": 160
+    "pushed_at": "2026-08-04T19:24:30Z",
+    "size_kb": 172
   },
   "popularity": {
     "forks": 0,
@@ -102,18 +105,6 @@
   "schema_version": 1,
   "traffic": {
     "clones": {
-      "2026-07-18": {
-        "count": 17,
-        "uniques": 8
-      },
-      "2026-07-19": {
-        "count": 17,
-        "uniques": 9
-      },
-      "2026-07-20": {
-        "count": 10,
-        "uniques": 5
-      },
       "2026-07-21": {
         "count": 11,
         "uniques": 6
@@ -157,23 +148,23 @@
       "2026-07-31": {
         "count": 9,
         "uniques": 4
+      },
+      "2026-08-01": {
+        "count": 9,
+        "uniques": 4
+      },
+      "2026-08-02": {
+        "count": 9,
+        "uniques": 4
+      },
+      "2026-08-03": {
+        "count": 10,
+        "uniques": 5
       }
     },
     "paths": [],
     "referrers": [],
     "views": {
-      "2026-07-18": {
-        "count": 0,
-        "uniques": 0
-      },
-      "2026-07-19": {
-        "count": 0,
-        "uniques": 0
-      },
-      "2026-07-20": {
-        "count": 0,
-        "uniques": 0
-      },
       "2026-07-21": {
         "count": 0,
         "uniques": 0
@@ -215,6 +206,18 @@
         "uniques": 0
       },
       "2026-07-31": {
+        "count": 0,
+        "uniques": 0
+      },
+      "2026-08-01": {
+        "count": 0,
+        "uniques": 0
+      },
+      "2026-08-02": {
+        "count": 0,
+        "uniques": 0
+      },
+      "2026-08-03": {
         "count": 0,
         "uniques": 0
       }
