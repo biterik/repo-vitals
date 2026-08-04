@@ -48,7 +48,11 @@ def vitals_payload(repo, collected_at, stars=10, views=100):
             "views_last_30d": views,
             "clones_last_30d": 5,
             "downloads_total": 42,
-            "health": {"score": 61},
+            "repo_created_at": "2025-10-05T19:34:00Z",
+            "tracking_since": "2026-06-23",
+            "tracking_days": 14,
+            "totals": {"views": 200, "clones": 70},
+            "per_30d": {"views": 428.6, "clones": 150.0},
         },
     }
 
@@ -109,7 +113,11 @@ def test_fresh_repo_is_ok():
     entry = fetch_repo_status(session, repo, now=NOW)
     assert entry["status"] == "ok"
     assert entry["days_since_update"] == 0
-    assert entry["stars"] == 10 and entry["health_score"] == 61
+    assert entry["stars"] == 10
+    assert entry["repo_created_at"] == "2025-10-05T19:34:00Z"
+    assert entry["tracking_since"] == "2026-06-23" and entry["tracking_days"] == 14
+    assert entry["views_total"] == 200 and entry["views_avg_30d"] == 428.6
+    assert "health_score" not in entry
 
 
 def test_stale_repo_is_flagged():
@@ -174,7 +182,8 @@ def test_build_hub_outputs_and_watchdog(tmp_path):
 
     assert summary["flagged"] == [stale, "biterik/bare"]
     assert summary["totals"] == {"repos": 3, "ok": 1, "stars": 10, "views_30d": 200,
-                                 "clones_30d": 10, "downloads_total": 84}
+                                 "clones_30d": 10, "downloads_total": 84,
+                                 "views_total": 400, "clones_total": 140}
 
     data = json.loads((tmp_path / "hub-data.json").read_text())
     assert [e["status"] for e in data["repos"]] == ["ok", "stale", "missing"]
@@ -183,7 +192,9 @@ def test_build_hub_outputs_and_watchdog(tmp_path):
     assert "Watchdog: 2 repositories need attention" in report
     assert "biterik/sleepy" in report and "`stale`" in report
     assert "biterik/bare" in report and "`missing`" in report
-    assert "| **Total** | | **10** |" in report
+    assert "| **Total** | | | | **10** |" in report  # blank created/tracked-since cells
+    assert "## Since tracking began" in report
+    assert "| Repository | Days tracked | Views | Views / 30 d |" in report
 
     html = (tmp_path / "index.html").read_text()
     assert 'fetch("hub-data.json")' in html

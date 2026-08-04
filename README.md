@@ -2,7 +2,6 @@
 
 ![stars](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fstars.json)
 ![views](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fviews-week.json)
-![health](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2Fbiterik%2Frepo-vitals%2Fvitals%2Fbadge%2Fhealth.json)
 (live badges — served from this repo's own `vitals` branch)
 
 **Your repository has a story. GitHub only remembers the last 14 days of it.**
@@ -51,8 +50,8 @@ from — and do they stick around?* GitHub deletes traffic data (views, clones,
 referrers) after 14 days, so by the time you wonder, the evidence is gone.
 repo-vitals keeps every day since instrumentation and turns it into trends,
 release-impact overlays, a conversion funnel (visitors → clones → stars →
-downloads), star-milestone forecasts, and a health score — plus README badges
-that show your project is alive.
+downloads), all-time totals with per-30-day averages, and star-milestone
+forecasts — plus README badges that show your project is alive.
 
 **If you manage a portfolio of repositories** — a research consortium, an
 institute, a company's open-source projects — you have to *report* on them:
@@ -211,7 +210,6 @@ downloads, activity). To view it:
 ```markdown
 ![stars](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2F<owner>%2F<repo>%2Fvitals%2Fbadge%2Fstars.json)
 ![views](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2F<owner>%2F<repo>%2Fvitals%2Fbadge%2Fviews-week.json)
-![health](https://img.shields.io/endpoint?url=https%3A%2F%2Fraw.githubusercontent.com%2F<owner>%2F<repo>%2Fvitals%2Fbadge%2Fhealth.json)
 ```
 
 **Scripts / pipelines** — consume `VITALS.json` (latest snapshot + derived
@@ -337,11 +335,11 @@ Once a repository is instrumented (Part 1/2), an orphan branch called
 
 | File | What it is | Stable URL |
 |---|---|---|
-| `REPORT.md` | Human-readable daily report: summary tables, trends, health score | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md` |
+| `REPORT.md` | Human-readable daily report: creation/tracking dates, summary tables, all-time totals and 30-day averages, trends | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/REPORT.md` |
 | `VITALS.json` | The same data, machine-readable (JSON, schema-versioned) | `https://raw.githubusercontent.com/<owner>/<repo>/vitals/VITALS.json` |
 | `index.html` | Interactive dashboard (charts, release-impact overlay) | serve via GitHub Pages, see [Part 3](#part-3-view-your-repos-vitals) |
 | `history.ndjson` | Complete per-day history since instrumentation | `…/vitals/history.ndjson` |
-| `badge/*.json` | Live shields.io badge endpoints (stars, views/week, health) | `…/vitals/badge/stars.json` |
+| `badge/*.json` | Live shields.io badge endpoints (stars, views/week) | `…/vitals/badge/stars.json` |
 | `snapshots/` | Immutable daily raw snapshots (audit trail) | `…/vitals/snapshots/2026-07-06.json` |
 | `reports/` | Dated, repo-qualified copy of that day's `REPORT.md` — safe to download standalone | `…/vitals/reports/<owner>-<repo>-2026-07-06.md` |
 

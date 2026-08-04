@@ -56,13 +56,16 @@ table {
   width:100%; border-collapse:collapse; background:var(--card);
   border:1px solid var(--border); border-radius:8px; overflow:hidden;
 }
-th, td { padding:7px 10px; text-align:left; font-size:.88rem; border-top:1px solid var(--border); }
+/* the fleet table gained created/tracked-since and total/average columns in
+   1.4 — let it scroll sideways rather than squeeze on a narrow screen */
+.scroll-x { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+.scroll-x table { min-width:1100px; }
+th, td { padding:7px 10px; text-align:left; font-size:.88rem; border-top:1px solid var(--border); white-space:nowrap; }
 tr:first-child th { border-top:none; color:var(--muted); font-weight:600; }
 td.num, th.num { text-align:right; }
 td a { color:var(--accent); text-decoration:none; }
 .st { font-weight:600; }
 .st-ok { color:#2da44e; } .st-stale { color:#bf8700; } .st-missing, .st-error { color:#cf222e; }
-.health-good { color:#2da44e; } .health-mid { color:#bf8700; } .health-bad { color:#cf222e; }
 footer { margin-top:36px; color:var(--muted); font-size:.8rem; }
 footer a { color:var(--accent); }
 </style>
@@ -79,7 +82,7 @@ footer a { color:var(--accent); }
   <main>
     <section>
       <h2>Fleet</h2>
-      <table id="fleet"></table>
+      <div class="scroll-x"><table id="fleet"></table></div>
     </section>
     <section class="grid2">
       <div><h2>Stars by repository</h2><div class="chart" id="stars-bar"></div></div>
@@ -160,16 +163,20 @@ footer a { color:var(--accent); }
     ["Views (30 d)", fmt(t.views_30d)],
     ["Clones (30 d)", fmt(t.clones_30d)],
     ["Release downloads", fmt(t.downloads_total)],
+    ["Views (all tracked)", fmt(t.views_total)],
+    ["Clones (all tracked)", fmt(t.clones_total)],
   ].map(([k, v]) =>
     '<div class="card"><div class="k">' + k + '</div><div class="v">' + v +
     "</div></div>").join("");
 
-  const healthClass = (s) => s == null ? "" :
-    s >= 55 ? "health-good" : s >= 30 ? "health-mid" : "health-bad";
+  const day = (v) => esc((v || "–").slice(0, 10));
   $("fleet").innerHTML =
-    "<tr><th>Repository</th><th>Status</th><th class='num'>Stars</th>" +
+    "<tr><th>Repository</th><th>Status</th><th>Created</th><th>Tracked since</th>" +
+    "<th class='num'>Days</th><th class='num'>Stars</th>" +
     "<th class='num'>Views 30d</th><th class='num'>Clones 30d</th>" +
-    "<th class='num'>Downloads</th><th class='num'>Health</th><th>Last update</th>" +
+    "<th class='num'>Views total</th><th class='num'>Views/30d</th>" +
+    "<th class='num'>Clones total</th><th class='num'>Clones/30d</th>" +
+    "<th class='num'>Downloads</th><th>Last update</th>" +
     "<th>Dashboard</th><th>Report</th></tr>" +
     repos.map((e) => {
       const dashboard = e.dashboard_url
@@ -178,11 +185,16 @@ footer a { color:var(--accent); }
         ? '<a href="' + esc(e.report_url) + '">REPORT.md</a>' : "–";
       return "<tr><td><a href='https://github.com/" + esc(e.repo) + "'>" + esc(e.repo) +
         "</a></td><td class='st st-" + esc(e.status) + "'>" + esc(e.status) + "</td>" +
+        "<td>" + day(e.repo_created_at) + "</td><td>" + day(e.tracking_since) + "</td>" +
+        "<td class='num'>" + fmt(e.tracking_days) + "</td>" +
         "<td class='num'>" + fmt(e.stars) + "</td><td class='num'>" + fmt(e.views_30d) +
-        "</td><td class='num'>" + fmt(e.clones_30d) + "</td><td class='num'>" +
-        fmt(e.downloads_total) + "</td><td class='num " + healthClass(e.health_score) +
-        "'>" + fmt(e.health_score) + "</td><td>" +
-        esc((e.collected_at || "–").slice(0, 10)) + "</td><td>" + dashboard +
+        "</td><td class='num'>" + fmt(e.clones_30d) + "</td>" +
+        "<td class='num'>" + fmt(e.views_total) + "</td>" +
+        "<td class='num'>" + fmt(e.views_avg_30d) + "</td>" +
+        "<td class='num'>" + fmt(e.clones_total) + "</td>" +
+        "<td class='num'>" + fmt(e.clones_avg_30d) + "</td>" +
+        "<td class='num'>" + fmt(e.downloads_total) + "</td><td>" +
+        day(e.collected_at) + "</td><td>" + dashboard +
         "</td><td>" + report + "</td></tr>";
     }).join("");
 

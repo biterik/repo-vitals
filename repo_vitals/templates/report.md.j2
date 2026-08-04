@@ -10,6 +10,11 @@
 
 _Updated {{ snapshot.collected_at }} (UTC) · machine-readable: [VITALS.json](VITALS.json) · full history: [history.ndjson](history.ndjson) · daily snapshots: [snapshots/](snapshots/)_
 
+| | |
+|---|---|
+| Repository created | {{ (derived.repo_created_at or "–")[:10] }} |
+| Tracked by repo-vitals since | {{ derived.tracking_since | dash }}{% if derived.tracking_days %} ({{ derived.tracking_days }} days)³{% endif %} |
+
 {% if traffic_failing %}
 > **⚠️ Traffic collection is failing{% if last_traffic_day %} — last traffic data: {{ last_traffic_day }}{% endif %}.**
 > Most likely the `REPO_VITALS_TOKEN` PAT is missing or expired (fine-grained PATs
@@ -28,7 +33,20 @@ _Updated {{ snapshot.collected_at }} (UTC) · machine-readable: [VITALS.json](VI
 
 ¹ sum of daily unique counts — an upper bound on true period uniques.
 
-**Health: {{ health.score }}/100** (heuristic² — traffic trend {{ health.components.traffic_trend }}, activity {{ health.components.activity }}, community {{ health.components.community }}, release adoption {{ health.components.release_adoption }})
+## Since tracking began
+
+Everything recorded so far{% if derived.tracking_since %}, from {{ derived.tracking_since }}{% endif %}{% if derived.tracking_days %} ({{ derived.tracking_days }} days){% endif %} — the total, and the same total expressed as an average rate.
+
+| Metric | Total | Average / 30 d |
+|---|---:|---:|
+| Views | {{ totals.views | dash }} | {{ per_30d.views | dash }} |
+| Unique visitors¹ | {{ totals.unique_visitors | dash }} | {{ per_30d.unique_visitors | dash }} |
+| Clones | {{ totals.clones | dash }} | {{ per_30d.clones | dash }} |
+| Unique cloners¹ | {{ totals.unique_cloners | dash }} | {{ per_30d.unique_cloners | dash }} |
+| Stars gained | {{ totals.stars_gained | dash }} | {{ per_30d.stars_gained | dash }} |
+| Release downloads gained | {{ totals.downloads_gained | dash }} | {{ per_30d.downloads_gained | dash }} |
+
+Averages are the total divided by days tracked, times 30 — not a projection.
 
 ## Trends — last {{ spark_days }} days
 
@@ -76,7 +94,9 @@ Next milestone **{{ forecast.next_milestone }}★**: {% if forecast.eta_linear %
 {% endfor %}
 {% if derived.downloads_total is not none %}
 
-Total release downloads: **{{ derived.downloads_total }}**{% if derived.downloads_gained_30d %} ({{ "%+d" | format(derived.downloads_gained_30d) }} in 30 d){% endif %}
+Total release downloads: **{{ derived.downloads_total }}** — GitHub's lifetime
+counter, which starts at each release's publication, not at the tracking start
+date above{% if derived.downloads_gained_30d %} ({{ "%+d" | format(derived.downloads_gained_30d) }} in 30 d){% endif %}.
 {% endif %}
 {% else %}
 No releases.
@@ -98,11 +118,18 @@ No releases.
 
 ---
 
-² Health score and milestone ETAs are simple labeled heuristics computed from
-this repo's history — see [repo-vitals](https://github.com/biterik/repo-vitals)
-for the formulas. Interactive dashboard: [index.html](index.html) on this
-branch (raw URLs don't render HTML — view it via GitHub Pages on the vitals
-branch, the repo-vitals hub, or locally: `git clone -b vitals … && python -m http.server`).
+² Milestone ETAs are a naive extrapolation of this repo's own star history —
+a labeled heuristic, not a prediction. See
+[repo-vitals](https://github.com/biterik/repo-vitals) for the formula.
+
+³ The first tracked day usually precedes the day repo-vitals was installed:
+GitHub's traffic API answers with a rolling 14-day window, so the first run
+already brings in up to 13 earlier days. Days before the repository existed
+are recorded as zeros.
+
+Interactive dashboard: [index.html](index.html) on this branch (raw URLs don't
+render HTML — view it via GitHub Pages on the vitals branch, the repo-vitals
+hub, or locally: `git clone -b vitals … && python -m http.server`).
 A copy of this report named with the repo and today's date lives at
 [reports/{{ snapshot.repo | replace("/", "-") }}-{{ snapshot.date }}.md](reports/{{ snapshot.repo | replace("/", "-") }}-{{ snapshot.date }}.md)
 — safe to download standalone.

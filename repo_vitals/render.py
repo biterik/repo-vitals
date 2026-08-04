@@ -96,19 +96,12 @@ def build_badges(snapshot: dict, derived: dict) -> dict[str, dict]:
         else:
             views_color = "brightgreen" if views > prev else ("orange" if views < prev else "blue")
 
-    score = derived["health"]["score"]
-    health_color = ("brightgreen" if score >= 70 else
-                    "yellowgreen" if score >= 55 else
-                    "yellow" if score >= 40 else
-                    "orange" if score >= 25 else "red")
-
     def endpoint(label, message, color):
         return {"schemaVersion": 1, "label": label, "message": str(message), "color": color}
 
     return {
         "stars.json": endpoint("stars", stars_msg, "blue"),
         "views-week.json": endpoint("views", views_msg, views_color),
-        "health.json": endpoint("health", f"{score}/100", health_color),
     }
 
 
@@ -130,9 +123,10 @@ def render_report(snapshot: dict, history: dict[str, dict], branch: str = "vital
     return _env.get_template("report.md.j2").render(
         snapshot=snapshot,
         derived=derived,
-        health=derived["health"],
         forecast=derived["star_forecast"],
         windows=derived["windows"],
+        totals=derived["totals"],
+        per_30d=derived["per_30d"],
         funnel=derived["funnel_30d"],
         traffic_failing=traffic_failing,
         last_traffic_day=traffic_days[-1] if traffic_days else None,
@@ -144,7 +138,6 @@ def render_report(snapshot: dict, history: dict[str, dict], branch: str = "vital
         badges=[
             ("stars", badge_url(repo, branch, "stars.json")),
             ("views/week", badge_url(repo, branch, "views-week.json")),
-            ("health", badge_url(repo, branch, "health.json")),
         ],
     )
 
@@ -214,7 +207,16 @@ def write_outputs(out_dir: str | Path, snapshot: dict, history: dict[str, dict],
     dashboard_path.write_text(render_dashboard(), encoding="utf-8")
     paths.append(dashboard_path)
 
-    for name, payload in build_badges(snapshot, compute_derived(snapshot, history)).items():
+    badges = build_badges(snapshot, compute_derived(snapshot, history))
+    for name, payload in badges.items():
         write_json(f"badge/{name}", payload)
+
+    # Drop badge endpoints this version no longer produces. The publish stage
+    # commits the whole tree, so a file we simply stop writing would otherwise
+    # sit on the vitals branch forever, serving its last value as if it were
+    # live (health.json, removed in 1.4.0, was exactly this).
+    for stale in (out / "badge").glob("*.json"):
+        if stale.name not in badges:
+            stale.unlink()
 
     return paths

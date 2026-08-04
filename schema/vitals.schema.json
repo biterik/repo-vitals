@@ -131,7 +131,7 @@
     },
     "derived": {
       "type": "object",
-      "description": "Present in VITALS.json only; computed at render time, never stored in history."
+      "description": "Present in VITALS.json only; computed at render time, never stored in history. Includes repo_created_at (GitHub's creation date), tracking_since / tracking_days (the span this archive actually covers \u2014 traffic-bearing days only, so the first-run star backfill does not inflate it), totals (everything recorded since tracking_since) and per_30d (each total divided by tracking_days, times 30). The composite health score was removed in 1.4.0."
     },
     "errors": {
       "type": "array",

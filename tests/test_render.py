@@ -42,10 +42,29 @@ def test_report_shows_key_numbers():
     assert "`/biterik/example`" in report
     assert "v1.3" in report and "182" in report
     assert "14 commits" in report
-    assert "Health:" in report and "/100" in report
     assert "Conversion funnel (30 d):" in report
     assert "img.shields.io/endpoint" in report
     assert "Traffic collection is failing" not in report
+    assert "Health" not in report  # removed in 1.4 — a heuristic pretending to be a verdict
+
+
+def test_report_states_creation_and_tracking_dates():
+    snap = rich_snapshot()
+    snap["meta"]["created_at"] = "2025-10-05T19:34:00Z"
+    report = render_report(snap, merge_snapshot({}, snap))
+
+    assert "| Repository created | 2025-10-05 |" in report
+    assert "Tracked by repo-vitals since | 2026-06-23 (14 days)" in report
+
+
+def test_report_shows_totals_and_30d_averages():
+    snap = rich_snapshot()
+    report = render_report(snap, merge_snapshot({}, snap))
+    views_total = sum(window("2026-07-06").values())
+
+    assert "## Since tracking began" in report
+    assert "| Metric | Total | Average / 30 d |" in report
+    assert f"| Views | {views_total} | {round(views_total * 30 / 14, 1)} |" in report
 
 
 def test_report_surfaces_failing_traffic_pat():
@@ -81,12 +100,11 @@ def test_badges_are_valid_shields_endpoints():
     history = merge_snapshot({}, snap)
     badges = build_badges(snap, compute_derived(snap, history))
 
-    assert set(badges) == {"stars.json", "views-week.json", "health.json"}
+    assert set(badges) == {"stars.json", "views-week.json"}
     for payload in badges.values():
         assert payload["schemaVersion"] == 1
         assert payload["label"] and payload["message"] and payload["color"]
     assert badges["stars.json"]["message"].startswith("53")
-    assert badges["health.json"]["message"].endswith("/100")
 
 
 def test_badge_views_trend_colors():
@@ -106,9 +124,21 @@ def test_write_outputs_includes_badges(tmp_path):
     snap = rich_snapshot()
     history = merge_snapshot({}, snap)
     write_outputs(tmp_path, snap, history)
-    for name in ("stars.json", "views-week.json", "health.json"):
+    for name in ("stars.json", "views-week.json"):
         payload = json.loads((tmp_path / "badge" / name).read_text())
         assert payload["schemaVersion"] == 1
+
+
+def test_write_outputs_prunes_badges_it_no_longer_writes(tmp_path):
+    """A retired endpoint must disappear, not keep serving its last value."""
+    (tmp_path / "badge").mkdir()
+    (tmp_path / "badge" / "health.json").write_text('{"schemaVersion": 1}')
+
+    snap = rich_snapshot()
+    write_outputs(tmp_path, snap, merge_snapshot({}, snap))
+
+    assert not (tmp_path / "badge" / "health.json").exists()
+    assert (tmp_path / "badge" / "stars.json").exists()
 
 
 def test_slugify_makes_filename_safe_identifiers():

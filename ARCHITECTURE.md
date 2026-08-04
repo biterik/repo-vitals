@@ -212,9 +212,24 @@ alongside the original stars/views.
 
 Growth per week/month; 7/30-day rolling traffic; release-impact overlay;
 conversion funnel (visitors → clones → stars → downloads); simple linear +
-exponential fit with ETA to next star milestone; composite health score
-(weights: 40 % traffic trend, 30 % activity, 20 % community, 10 % release
-adoption — clearly labeled heuristic, weights configurable).
+exponential fit with ETA to next star milestone.
+
+**Provenance and totals.** Two dates make every number readable: the
+repository's own creation date (`meta.created_at`, straight from the REST
+API) and `tracking_since` — the first day the archive actually covers.
+`tracking_since` counts only days carrying traffic data, because the
+first-run star backfill writes sparse days reaching back to repo birth; a
+plain `len(history)` therefore overstates the record, sometimes by months.
+It typically sits ~13 days *before* the day repo-vitals was installed, since
+GitHub's traffic API answers with a rolling 14-day window. From it comes
+`tracking_days`, all-time `totals`, and `per_30d` — each total divided by
+days tracked, times 30. A rate, not a projection.
+
+*Removed in 1.4:* the composite health score. A single 0–100 number, however
+carefully labeled a heuristic, is read as a verdict on the project; a quiet,
+finished, useful library scored badly for no defensible reason. The
+underlying components (traffic trend, activity, community, release adoption)
+remain visible as themselves.
 
 ### v1.1 (design in, implement second)
 

@@ -18,16 +18,31 @@ _Generated {{ generated_at }} (UTC) · {{ totals.repos }} repositories tracked �
 
 ## Fleet overview
 
-| Repository | Status | Stars | Views (30 d) | Clones (30 d) | Downloads | Health | Last update |
-|---|---|---:|---:|---:|---:|---:|---|
+| Repository | Status | Created | Tracked since | Stars | Views (30 d) | Clones (30 d) | Downloads | Last update |
+|---|---|---|---|---:|---:|---:|---:|---|
 {% for e in repos %}
-| [{{ e.repo }}](https://github.com/{{ e.repo }}) | {{ {"ok": "✅ ok", "stale": "⚠️ stale", "missing": "❌ missing", "error": "❌ error"}[e.status] }} | {{ e.stars | dash }} | {{ e.views_30d | dash }} | {{ e.clones_30d | dash }} | {{ e.downloads_total | dash }} | {{ e.health_score | dash }} | {{ (e.collected_at or "–")[:10] }} |
+| [{{ e.repo }}](https://github.com/{{ e.repo }}) | {{ {"ok": "✅ ok", "stale": "⚠️ stale", "missing": "❌ missing", "error": "❌ error"}[e.status] }} | {{ (e.repo_created_at or "–")[:10] }} | {{ e.tracking_since | dash }} | {{ e.stars | dash }} | {{ e.views_30d | dash }} | {{ e.clones_30d | dash }} | {{ e.downloads_total | dash }} | {{ (e.collected_at or "–")[:10] }} |
 {% endfor %}
-| **Total** | | **{{ totals.stars | dash }}** | **{{ totals.views_30d | dash }}** | **{{ totals.clones_30d | dash }}** | **{{ totals.downloads_total | dash }}** | | |
+| **Total** | | | | **{{ totals.stars | dash }}** | **{{ totals.views_30d | dash }}** | **{{ totals.clones_30d | dash }}** | **{{ totals.downloads_total | dash }}** | |
 
-Health is a 0–100 heuristic computed per repo — see
-[repo-vitals](https://github.com/biterik/repo-vitals) for the formula.
-Repositories are flagged when their data is older than {{ stale_after_days }} days.
+_Created_ is the date the repository appeared on GitHub; _tracked since_ is the
+first day covered by its repo-vitals archive. The two differ — a repo can be
+years older than its analytics record, and everything below the 30-day columns
+is only measured from the tracking start date. Repositories are flagged when
+their data is older than {{ stale_after_days }} days.
+
+## Since tracking began
+
+| Repository | Days tracked | Views | Views / 30 d | Clones | Clones / 30 d | Release downloads |
+|---|---:|---:|---:|---:|---:|---:|
+{% for e in repos %}
+| [{{ e.repo }}](https://github.com/{{ e.repo }}) | {{ e.tracking_days | dash }} | {{ e.views_total | dash }} | {{ e.views_avg_30d | dash }} | {{ e.clones_total | dash }} | {{ e.clones_avg_30d | dash }} | {{ e.downloads_total | dash }} |
+{% endfor %}
+| **Total** | | **{{ totals.views_total | dash }}** | | **{{ totals.clones_total | dash }}** | | **{{ totals.downloads_total | dash }}** |
+
+Averages are each repo's total divided by its own days tracked, times 30 — not
+a projection. Release downloads are GitHub's lifetime counter per release, so
+they can predate the tracking start date.
 
 ## Per-repository reports
 

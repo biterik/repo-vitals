@@ -6,6 +6,65 @@ follows [Keep a Changelog](https://keepachangelog.com/); versioning is
 pinned to `biterik/repo-vitals@v1` receive fixes automatically — see
 [`release.yml`](.github/workflows/release.yml)).
 
+## [1.4.0] - 2026-08-04
+
+### Added
+
+- **Provenance on every artifact.** `REPORT.md`, the dashboard, the hub table
+  and `hub-data.json` now state two dates that were previously invisible: the
+  repository's GitHub creation date (already collected as `meta.created_at`,
+  but never rendered) and `derived.tracking_since` — the first day this
+  archive actually covers, with `derived.tracking_days` alongside it. Without
+  both, a total is unreadable: "1,282 clones" means nothing until you know it
+  was over 43 days, and that the repo itself is nine months older than that.
+- `tracking_since` deliberately counts only days carrying traffic data. The
+  first-run star backfill writes sparse days reaching back to repo birth, so
+  the old `derived.history_days` (`len(history)`) could claim 42 days of
+  history for an archive whose real record was 41 days plus one star event
+  from the previous October. `history_days` is retained, unchanged, for
+  compatibility; nothing renders it any more.
+- **All-time totals and 30-day averages.** New `derived.totals` (views,
+  unique visitors, clones, unique cloners, stars gained, release downloads
+  gained — everything since `tracking_since`) and `derived.per_30d`, each
+  total divided by days tracked, times 30. Shown as a "Since tracking began"
+  table in `REPORT.md`, as two new stat cards on the dashboard, and as a
+  second table plus new columns in the hub. Averages are a rate, not a
+  projection.
+- Hub: the fleet table gained created / tracked-since / days / totals /
+  averages columns and now scrolls horizontally rather than squeezing.
+
+### Removed
+
+- **The composite health score**, everywhere: `derived.health`,
+  `compute_health()`, the `badge/health.json` shields endpoint, the
+  `REPORT.md` line, the dashboard stat card, the hub column and
+  `hub-data.json`'s `health_score`. A single 0–100 number is read as a
+  verdict no matter how prominently it is labeled a heuristic, and it
+  scored quiet, finished, perfectly useful repositories badly. The
+  components it was built from remain visible as themselves.
+
+  This changes the published shape of `VITALS.json` and removes a badge
+  endpoint. It ships as a minor release because the floating `v1` tag moves
+  with it, so all tracked repos pick it up on their next scheduled run —
+  deliberate: the alternative was nine repos stuck on a metric that was
+  removed for being misleading. **If you embedded the health badge in a
+  README, remove that line** — the endpoint stops being written and the
+  badge will show as unavailable once the vitals branch next updates.
+
+### Fixed
+
+- `write_outputs()` now deletes badge endpoints it no longer generates.
+  Publishing commits the whole tree, so a file the renderer simply stops
+  writing would sit on the `vitals` branch indefinitely, serving its last
+  value as though it were live — `badge/health.json` would have done exactly
+  that after this release.
+
+### Changed
+
+- Release downloads are now labeled in `REPORT.md` and the hub as GitHub's
+  lifetime per-release counter, which starts at each release's publication
+  and can therefore predate the tracking start date.
+
 ## [1.3.0] - 2026-07-08
 
 First formally documented release — no code changes since 1.2.3, this
@@ -124,6 +183,7 @@ Initial tagged release — milestones M1–M5:
   never a direct push) and `release.yml` (pushing a SemVer tag moves the
   floating `v1` major tag).
 
+[1.4.0]: https://github.com/biterik/repo-vitals/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/biterik/repo-vitals/compare/v1.2.3...v1.3.0
 [1.2.3]: https://github.com/biterik/repo-vitals/compare/v1.2.2...v1.2.3
 [1.2.2]: https://github.com/biterik/repo-vitals/compare/v1.2.1...v1.2.2

@@ -101,7 +101,13 @@ def fetch_repo_status(session, repo, branch="vitals", stale_after_days=DEFAULT_S
         "days_since_update": None,
         "collected_at": None,
         "stars": None, "views_30d": None, "clones_30d": None,
-        "downloads_total": None, "health_score": None,
+        "downloads_total": None,
+        # Provenance + since-tracking-began rollups (derived.* in VITALS.json).
+        # Absent from data published by pre-1.4 repo-vitals, hence .get() below
+        # and a "–" in every rendered cell until that repo runs again.
+        "repo_created_at": None, "tracking_since": None, "tracking_days": None,
+        "views_total": None, "clones_total": None,
+        "views_avg_30d": None, "clones_avg_30d": None,
         "report_url": f"{base}/REPORT.md",
         "dashboard_url": None,  # filled in once build_hub() mirrors this repo's dashboard
         "series": None,
@@ -131,6 +137,8 @@ def fetch_repo_status(session, repo, branch="vitals", stale_after_days=DEFAULT_S
         return entry
 
     derived = vitals.get("derived") or {}
+    totals = derived.get("totals") or {}
+    per_30d = derived.get("per_30d") or {}
     collected_at = str(vitals.get("collected_at", ""))
     entry.update({
         "collected_at": collected_at or None,
@@ -138,7 +146,14 @@ def fetch_repo_status(session, repo, branch="vitals", stale_after_days=DEFAULT_S
         "views_30d": derived.get("views_last_30d"),
         "clones_30d": derived.get("clones_last_30d"),
         "downloads_total": derived.get("downloads_total"),
-        "health_score": (derived.get("health") or {}).get("score"),
+        "repo_created_at": (derived.get("repo_created_at")
+                            or (vitals.get("meta") or {}).get("created_at")),
+        "tracking_since": derived.get("tracking_since"),
+        "tracking_days": derived.get("tracking_days"),
+        "views_total": totals.get("views"),
+        "clones_total": totals.get("clones"),
+        "views_avg_30d": per_30d.get("views"),
+        "clones_avg_30d": per_30d.get("clones"),
     })
     try:
         age = (now.date() - dt.date.fromisoformat(collected_at[:10])).days
@@ -273,6 +288,8 @@ def build_hub(config: dict, out_dir: str | Path, session=None, now=None) -> dict
             "views_30d": total("views_30d"),
             "clones_30d": total("clones_30d"),
             "downloads_total": total("downloads_total"),
+            "views_total": total("views_total"),
+            "clones_total": total("clones_total"),
         },
     }
 

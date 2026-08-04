@@ -5,9 +5,8 @@
 """Derived metrics — computed at render time, never stored in history (§4).
 
 Everything here is a pure function of the merged per-day history plus the
-latest snapshot. The health score and the star-milestone forecasts are
-clearly-labeled heuristics: simple, explainable formulas, not analytics.
-Weights become configurable when the config file lands (v1.1).
+latest snapshot. The star-milestone forecast is a clearly-labeled heuristic:
+a simple, explainable extrapolation, not analytics.
 """
 
 from __future__ import annotations
@@ -15,18 +14,13 @@ from __future__ import annotations
 import datetime as dt
 import math
 
-HEALTH_WEIGHTS = {
-    "traffic_trend": 0.4,
-    "activity": 0.3,
-    "community": 0.2,
-    "release_adoption": 0.1,
-}
-
 STAR_MILESTONES = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000,
                    10000, 25000, 50000, 100000]
 
 FORECAST_WINDOW_DAYS = 90
 FORECAST_HORIZON_DAYS = 3650  # ETAs beyond ~10 years are noise, report None
+
+AVERAGING_PERIOD_DAYS = 30  # totals are also expressed as a rate per this many days
 
 
 def compute_derived(snapshot: dict, history: dict[str, dict]) -> dict:
@@ -52,6 +46,17 @@ def compute_derived(snapshot: dict, history: dict[str, dict]) -> dict:
             "downloads_gained": series_gained(downloads, end, days),
         }
 
+    tracking_since, tracking_days = tracking_span(history, end)
+    totals = {
+        "views": total_sum(history, "views"),
+        "unique_visitors": total_sum(history, "views", field="uniques"),
+        "clones": total_sum(history, "clones"),
+        "unique_cloners": total_sum(history, "clones", field="uniques"),
+        "stars_gained": (None if not stars else
+                         stars[-1][1] - (0 if stars_from_birth else stars[0][1])),
+        "downloads_gained": (None if not downloads else downloads[-1][1] - downloads[0][1]),
+    }
+
     return {
         "views_last_7d": views_7d,
         "views_prev_7d": views_prev_7d,
@@ -71,14 +76,55 @@ def compute_derived(snapshot: dict, history: dict[str, dict]) -> dict:
             "downloads_gained": downloads_gained_30d,
         },
         "star_forecast": star_forecast(stars, end),
-        "health": compute_health(snapshot, views_7d, views_prev_7d,
-                                 stars_gained_30d, downloads_gained_30d),
+        # Provenance (§4a): how old the repository is, and how much of that
+        # this archive actually covers. Both are needed to read the totals
+        # honestly — "1,282 clones" means nothing without "over 43 days".
+        "repo_created_at": (snapshot.get("meta") or {}).get("created_at"),
+        "tracking_since": tracking_since,
+        "tracking_days": tracking_days,
         "history_days": len(history),
+        "totals": totals,
+        "per_30d": {key: rate(value, tracking_days) for key, value in totals.items()},
     }
 
 
 def _snapshot_stars(snapshot):
     return (snapshot.get("popularity") or {}).get("stars")
+
+
+# ---------------------------------------------------------------- provenance
+
+def tracking_span(history, end):
+    """(first tracked day, days covered) — the real "tracked since".
+
+    Only days carrying traffic data count. The first run backfills a sparse
+    star history reaching back to repo birth (merge.merge_star_backfill), so
+    len(history) can span years while the archive itself is weeks old;
+    counting those days as "tracked" would overstate the record.
+
+    The first tracked day is typically ~13 days before the first collector
+    run, because GitHub's traffic API answers with a rolling 14-day window —
+    those pre-install days are real data, not padding.
+    """
+    tracked = sorted(day for day, rec in history.items()
+                     if "views" in rec or "clones" in rec)
+    if not tracked:
+        return None, None
+    first = tracked[0]
+    return first, (end - dt.date.fromisoformat(first)).days + 1
+
+
+def total_sum(history, kind, field="count"):
+    """Sum of a daily traffic field over the whole archive; None if no data."""
+    values = [rec[kind][field] for rec in history.values() if kind in rec]
+    return sum(values) if values else None
+
+
+def rate(value, tracking_days, period=AVERAGING_PERIOD_DAYS):
+    """A total expressed as an average per `period` days; None if unknown."""
+    if value is None or not tracking_days:
+        return None
+    return round(value * period / tracking_days, 1)
 
 
 # ---------------------------------------------------------------- series
@@ -189,60 +235,3 @@ def star_forecast(series, end):
                 result["eta_exponential"] = (end + dt.timedelta(days=days)).isoformat()
     return result
 
-
-# ---------------------------------------------------------------- health
-
-def compute_health(snapshot, views_last_7d, views_prev_7d,
-                   stars_gained_30d, downloads_gained_30d):
-    """Composite 0–100 health score (§4) — a labeled heuristic, not a truth.
-
-    Component formulas (each clamped to 0–100):
-      traffic_trend     50 * (views last 7d / previous 7d); 0 if dead, 100 if new
-      activity          4*commits + 8*PRs merged + 3*PRs opened
-                        + 3*issues closed + 2*issues opened (all 30d)
-      community         8*contributors + 2*forks + 3*subscribers + 4*stars gained 30d
-      release_adoption  10 + downloads gained 30d (0 without releases)
-    """
-    activity = snapshot.get("activity") or {}
-    popularity = snapshot.get("popularity") or {}
-
-    if not views_last_7d:
-        traffic_trend = 0
-    elif not views_prev_7d:
-        traffic_trend = 100
-    else:
-        traffic_trend = max(0, min(100, round(50 * views_last_7d / views_prev_7d)))
-
-    activity_score = min(100, (
-        4 * activity.get("commits_30d", 0)
-        + 8 * activity.get("prs_merged_30d", 0)
-        + 3 * activity.get("prs_opened_30d", 0)
-        + 3 * activity.get("issues_closed_30d", 0)
-        + 2 * activity.get("issues_opened_30d", 0)
-    ))
-
-    community = min(100, (
-        8 * activity.get("contributors_total", 0)
-        + 2 * (popularity.get("forks") or 0)
-        + 3 * (popularity.get("subscribers") or 0)
-        + 4 * (stars_gained_30d or 0)
-    ))
-
-    if not snapshot.get("releases"):
-        release_adoption = 0
-    else:
-        release_adoption = min(100, 10 + (downloads_gained_30d or 0))
-
-    components = {
-        "traffic_trend": traffic_trend,
-        "activity": activity_score,
-        "community": community,
-        "release_adoption": release_adoption,
-    }
-    score = round(sum(HEALTH_WEIGHTS[k] * v for k, v in components.items()))
-    return {
-        "score": score,
-        "components": components,
-        "weights": HEALTH_WEIGHTS,
-        "note": "heuristic composite — weights fixed in v1, configurable later",
-    }

@@ -2,7 +2,7 @@
 # Department of Materials Science, WW8-Materials Simulation,
 # Friedrich-Alexander-Universität Erlangen-Nürnberg,
 # Dr.-Mack-Straße 77, 90762 Fürth, Germany
-"""Derived metrics (§4): growth windows, funnel, forecasts, health score."""
+"""Derived metrics (§4): growth windows, funnel, forecasts, tracking span."""
 
 import datetime as dt
 
@@ -10,11 +10,12 @@ from conftest import make_snapshot, window
 
 from repo_vitals.derived import (
     compute_derived,
-    compute_health,
     linear_fit,
+    rate,
     series_gained,
     star_forecast,
     star_series,
+    tracking_span,
 )
 from repo_vitals.merge import merge_snapshot, merge_star_backfill
 
@@ -83,26 +84,40 @@ def test_forecast_exponential_beats_linear_for_growth():
     assert forecast["eta_exponential"] <= forecast["eta_linear"]
 
 
-def test_health_score_bounds_and_components():
-    dead = make_snapshot("2026-07-06", traffic_present=False, releases=[])
-    dead["popularity"] = None
-    dead["activity"] = None
-    h = compute_health(dead, None, None, None, None)
-    assert h["score"] == 0
-    assert set(h["components"]) == {"traffic_trend", "activity",
-                                    "community", "release_adoption"}
+def test_tracking_span_ignores_backfilled_star_days():
+    """The star backfill reaches back to repo birth; it is not tracking data."""
+    history = merge_star_backfill({}, ["2025-10-09"])  # a star, long before install
+    merge_snapshot(history, make_snapshot("2026-07-06", views=window("2026-07-06")))
+    first, days = tracking_span(history, END)
+    assert first == "2026-06-23"            # 14-day traffic window, not 2025-10-09
+    assert days == 14
+    assert len(history) == 15               # history_days would have said 15
 
-    busy = make_snapshot(
-        "2026-07-06",
-        releases=[{"tag": "v1", "published_at": "2026-01-01T00:00:00Z",
-                   "assets": [{"name": "a", "downloads": 500}]}],
-        activity={"commits_30d": 40, "prs_opened_30d": 10, "prs_merged_30d": 8,
-                  "issues_opened_30d": 5, "issues_closed_30d": 6,
-                  "contributors_total": 12},
-    )
-    h = compute_health(busy, 200, 100, 20, 150)
-    assert h["score"] == 100
-    assert all(0 <= c <= 100 for c in h["components"].values())
+
+def test_tracking_span_without_traffic_is_unknown():
+    assert tracking_span({}, END) == (None, None)
+    assert tracking_span(merge_star_backfill({}, ["2026-01-01"]), END) == (None, None)
+
+
+def test_rate_is_a_per_30_day_average():
+    assert rate(300, 30) == 300.0
+    assert rate(300, 60) == 150.0
+    assert rate(43, 43) == 30.0
+    assert rate(None, 30) is None and rate(300, None) is None and rate(300, 0) is None
+
+
+def test_totals_and_averages_cover_the_whole_archive():
+    snap = make_snapshot("2026-07-06", views=window("2026-07-06", base=10),
+                         clones=window("2026-07-06", base=1))
+    history = merge_snapshot({}, snap)
+    d = compute_derived(snap, history)
+
+    expected_views = sum(window("2026-07-06", base=10).values())
+    assert d["totals"]["views"] == expected_views
+    assert d["tracking_days"] == 14
+    assert d["per_30d"]["views"] == round(expected_views * 30 / 14, 1)
+    # the 30d window and the all-time total agree while the archive is younger
+    assert d["totals"]["views"] == d["views_last_30d"]
 
 
 def test_compute_derived_end_to_end():
@@ -123,4 +138,6 @@ def test_compute_derived_end_to_end():
     assert d["windows"]["365d"]["stars_gained"] == 50
     assert d["funnel_30d"]["unique_visitors"] == d["windows"]["30d"]["unique_visitors"]
     assert d["star_forecast"]["next_milestone"] == 100
-    assert 0 <= d["health"]["score"] <= 100
+    assert "health" not in d
+    assert d["repo_created_at"] is None  # make_snapshot's meta carries no created_at
+    assert d["tracking_since"] == "2026-06-23" and d["tracking_days"] == 14
