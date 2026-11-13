@@ -7,11 +7,11 @@
     "prs_merged_30d": 0,
     "prs_opened_30d": 0
   },
-  "collected_at": "2026-11-12T11:23:58Z",
-  "date": "2026-11-12",
+  "collected_at": "2026-11-13T11:06:49Z",
+  "date": "2026-11-13",
   "derived": {
     "clones_last_30d": 397,
-    "clones_last_7d": 90,
+    "clones_last_7d": 83,
     "downloads_gained_30d": 0,
     "downloads_total": 0,
     "funnel_30d": {
@@ -20,14 +20,14 @@
       "unique_cloners": 230,
       "unique_visitors": 14
     },
-    "history_days": 143,
+    "history_days": 144,
     "per_30d": {
-      "clones": 364.8,
+      "clones": 366.0,
       "downloads_gained": 0.0,
       "stars_gained": 0.0,
-      "unique_cloners": 203.1,
-      "unique_visitors": 12.0,
-      "views": 15.9
+      "unique_cloners": 204.0,
+      "unique_visitors": 11.9,
+      "views": 15.8
     },
     "repo_created_at": "2026-07-06T13:31:29Z",
     "star_forecast": {
@@ -40,18 +40,18 @@
     "stars_gained_7d": 0,
     "stars_now": 0,
     "totals": {
-      "clones": 1739,
+      "clones": 1757,
       "downloads_gained": 0,
       "stars_gained": 0,
-      "unique_cloners": 968,
+      "unique_cloners": 979,
       "unique_visitors": 57,
       "views": 76
     },
-    "tracking_days": 143,
+    "tracking_days": 144,
     "tracking_since": "2026-06-23",
     "views_last_30d": 14,
     "views_last_7d": 0,
-    "views_prev_7d": 5,
+    "views_prev_7d": 4,
     "windows": {
       "30d": {
         "clones": 397,
@@ -61,14 +61,14 @@
         "views": 14
       },
       "365d": {
-        "clones": 1739,
+        "clones": 1757,
         "downloads_gained": 0,
         "stars_gained": 0,
         "unique_visitors": 57,
         "views": 76
       },
       "90d": {
-        "clones": 1093,
+        "clones": 1104,
         "downloads_gained": 0,
         "stars_gained": 0,
         "unique_visitors": 50,
@@ -83,8 +83,8 @@
     "default_branch": "main",
     "fork": false,
     "open_issues": 0,
-    "pushed_at": "2026-11-11T11:05:32Z",
-    "size_kb": 306
+    "pushed_at": "2026-11-12T11:24:01Z",
+    "size_kb": 307
   },
   "popularity": {
     "forks": 0,
@@ -105,10 +105,6 @@
   "schema_version": 1,
   "traffic": {
     "clones": {
-      "2026-10-29": {
-        "count": 17,
-        "uniques": 10
-      },
       "2026-10-30": {
         "count": 7,
         "uniques": 4
@@ -160,18 +156,17 @@
       "2026-11-11": {
         "count": 15,
         "uniques": 8
+      },
+      "2026-11-12": {
+        "count": 18,
+        "uniques": 11
       }
     },
     "paths": [
       {
-        "count": 5,
+        "count": 2,
         "path": "/biterik/repo-vitals",
-        "uniques": 5
-      },
-      {
-        "count": 1,
-        "path": "/biterik/repo-vitals/releases",
-        "uniques": 1
+        "uniques": 2
       },
       {
         "count": 1,
@@ -191,9 +186,9 @@
     ],
     "referrers": [
       {
-        "count": 8,
+        "count": 4,
         "referrer": "aocr.org",
-        "uniques": 8
+        "uniques": 4
       },
       {
         "count": 1,
@@ -202,10 +197,6 @@
       }
     ],
     "views": {
-      "2026-10-29": {
-        "count": 4,
-        "uniques": 4
-      },
       "2026-10-30": {
         "count": 1,
         "uniques": 1
@@ -255,6 +246,10 @@
         "uniques": 0
       },
       "2026-11-11": {
+        "count": 0,
+        "uniques": 0
+      },
+      "2026-11-12": {
         "count": 0,
         "uniques": 0
       }
